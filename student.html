@@ -13,7 +13,6 @@
     };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
-    
     <style>
         * {
             margin: 0;
@@ -1657,6 +1656,41 @@ sup {
             CLIENT_ID: '37355855536-n1pdonbkg3lb3s6psq938jk81hgjnebe.apps.googleusercontent.com',
             API_URL: 'https://dnotflkcoj.execute-api.ap-southeast-2.amazonaws.com/prod'
         };
+        // Helper function to get auth headers with school context
+        function getAuthHeaders() {
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${state.token}`,
+                'X-School-ID': state.schoolCode || localStorage.getItem('schoolCode') || ''
+            };
+        }
+
+        // Load school branding
+        async function loadSchoolBranding() {
+            const schoolCode = state.schoolCode || localStorage.getItem('schoolCode');
+            if (!schoolCode) return;
+            
+            try {
+                const response = await fetch(`${CONFIG.API_URL}/api/school/branding/${schoolCode}`);
+                if (response.ok) {
+                    const schoolData = await response.json();
+                    const logoDiv = document.querySelector('.logo');
+                    if (logoDiv) {
+                        logoDiv.textContent = `📚 ${schoolData.name}`;
+                    }
+                    if (schoolData.primaryColor) {
+                        document.documentElement.style.setProperty('--primary', schoolData.primaryColor);
+                    }
+                    if (schoolData.secondaryColor) {
+                        document.documentElement.style.setProperty('--secondary', schoolData.secondaryColor);
+                    }
+                    console.log('✅ School branding loaded:', schoolData.name);
+                }
+            } catch (error) {
+                console.error('❌ Failed to load school branding:', error);
+            }
+        }
+
 
         let state = {
             user: null,
@@ -1673,35 +1707,6 @@ sup {
             availableSubjects: [],
             availableMediums: [],
             voiceSupported: false
-        };
-
-        // Helper function to get auth headers with school context
-        function getAuthHeaders() {
-            return {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${state.token}`,
-                'X-School-ID': state.schoolCode || localStorage.getItem('schoolCode') || ''
-            };
-        }
-
-        // Load school branding
-        async function loadSchoolBranding() {
-            const schoolCode = state.schoolCode || localStorage.getItem('schoolCode');
-            if (!schoolCode) return;
-            try {
-                const response = await fetch(`${CONFIG.API_URL}/api/school/branding/${schoolCode}`);
-                if (response.ok) {
-                    const schoolData = await response.json();
-                    const logoDiv = document.querySelector('.logo');
-                    if (logoDiv) logoDiv.textContent = `📚 ${schoolData.name}`;
-                    if (schoolData.primaryColor) document.documentElement.style.setProperty('--primary', schoolData.primaryColor);
-                    if (schoolData.secondaryColor) document.documentElement.style.setProperty('--secondary', schoolData.secondaryColor);
-                    console.log('✅ School branding loaded:', schoolData.name);
-                }
-            } catch (error) {
-                console.error('❌ Failed to load school branding:', error);
-            }
-
         };
 
         document.addEventListener('DOMContentLoaded', init);
@@ -1928,3 +1933,1032 @@ sup {
                 mediumSelect.innerHTML = '<option value="english">English</option>';
             }
         }
+
+        
+
+        async function handleSignIn(response) {
+            try {
+                showNotification('Signing in...', 'info');
+                const userInfo = parseJwt(response.credential);
+                
+                const authResponse = await fetch(`${CONFIG.API_URL}/auth/google`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                       
+                    },
+                    body: JSON.stringify({ 
+                        googleUserData: {
+                            id: userInfo.sub,
+                            email: userInfo.email,
+                            name: userInfo.name,
+                            picture: userInfo.picture
+                        }
+                    })
+                });
+
+                const data = await authResponse.json();
+                state.user = data.user;
+                state.token = data.sessionToken;
+                
+                saveSession();
+                showUserProfile();
+                showMainContent();
+                
+                await loadMetadata();
+                
+                loadHistory();
+                loadPreferences();
+                
+                showNotification(`Welcome ${state.user.name}!`, 'success');
+            } catch (error) {
+                console.error('Sign in error:', error);
+                showNotification('Failed to sign in', 'error');
+            }
+        }
+
+        function parseJwt(token) {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => 
+                '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+            ).join(''));
+            return JSON.parse(jsonPayload);
+        }
+
+        function saveSession() {
+            const sessionData = {
+                user: state.user,
+                token: state.token
+            };
+            sessionStorage.setItem('aasai_session', JSON.stringify(sessionData));
+        }
+
+        async function restoreSession() {
+            // Check localStorage for multi-tenant auth
+            const sessionToken = localStorage.getItem('sessionToken');
+            const schoolCode = localStorage.getItem('schoolCode');
+            const userName = localStorage.getItem('userName');
+            const userEmail = localStorage.getItem('userEmail');
+            const userPicture = localStorage.getItem('userPicture');
+            const userId = localStorage.getItem('userId');
+            
+            if (!sessionToken || !schoolCode) {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            state.token = sessionToken;
+            state.schoolCode = schoolCode;
+            state.user = {
+                name: userName,
+                email: userEmail,
+                picture: userPicture,
+                id: userId,
+                searchCount: 0
+            };
+            
+            // Load school branding
+            await loadSchoolBranding();
+            
+            // Show user profile
+            showUserProfile();
+            showMainContent();
+            
+            // Load data
+            await loadMetadata();
+            loadHistory();
+            loadPreferences();
+        }
+
+        async function signOut() {
+            try {
+                if (state.token) {
+                    await fetch(`${CONFIG.API_URL}/auth/logout`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${state.token}`,
+                           
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Sign out error:', error);
+            }
+            
+            state.user = null;
+            state.token = null;
+            sessionStorage.removeItem('aasai_session');
+            localStorage.clear();
+            window.location.href = 'login.html';
+            return;
+            
+            document.getElementById('user-profile').classList.remove('active');
+            document.getElementById('sign-out-btn').style.display = 'none';
+            document.getElementById('auth-screen').style.display = 'block';
+            document.getElementById('main-content').style.display = 'none';
+            
+            showNotification('Signed out', 'success');
+        }
+
+        function showUserProfile() {
+            document.getElementById('user-avatar').src = state.user.picture;
+            document.getElementById('user-name').textContent = state.user.name;
+            document.getElementById('search-count').textContent = state.user.searchCount || 0;
+            document.getElementById('user-profile').classList.add('active');
+            document.getElementById('sign-out-btn').style.display = 'block';
+            }
+
+        function showMainContent() {
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('main-content').style.display = 'grid';
+        }
+
+        function savePreferences() {
+            if (state.user) {
+                const prefsKey = `prefs_${state.user.id}`;
+                
+                state.preferences = {
+                    standard: document.getElementById('standard-select').value || null,
+                    subject: document.getElementById('subject-select').value || null,
+                    medium: document.getElementById('medium-select').value || null
+                };
+                
+                sessionStorage.setItem(prefsKey, JSON.stringify(state.preferences));
+                
+                const standardText = state.preferences.standard ? `Class ${state.preferences.standard}` : 'All';
+                const subjectText = state.preferences.subject ? 
+                    state.preferences.subject.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'All';
+                
+                showNotification(`Preferences saved: ${standardText}, ${subjectText}`, 'success', 2000);
+            }
+        }
+
+        function loadPreferences() {
+            if (state.user) {
+                const prefsKey = `prefs_${state.user.id}`;
+                const saved = sessionStorage.getItem(prefsKey);
+                if (saved) {
+                    state.preferences = JSON.parse(saved);
+                    
+                    if (state.preferences.standard) {
+                        document.getElementById('standard-select').value = state.preferences.standard;
+                    }
+                    
+                    if (state.preferences.subject) {
+                        setTimeout(() => {
+                            document.getElementById('subject-select').value = state.preferences.subject || '';
+                        }, 500);
+                    }
+                    
+                    if (state.preferences.medium) {
+                        document.getElementById('medium-select').value = state.preferences.medium;
+                    }
+                }
+            }
+        }
+
+        // FIXED VOICE RECOGNITION
+        function initVoiceRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            
+            if (!SpeechRecognition) {
+                console.warn('⚠️ Speech recognition not supported in this browser');
+                state.voiceSupported = false;
+                
+                // Disable voice buttons and show tooltip
+                const voiceBtnDesktop = document.getElementById('voice-btn');
+                const voiceBtnMobile = document.getElementById('voice-btn-mobile');
+                
+                voiceBtnDesktop.disabled = true;
+                voiceBtnMobile.disabled = true;
+                voiceBtnDesktop.title = 'Voice input not supported in this browser';
+                voiceBtnMobile.title = 'Voice input not supported in this browser';
+                voiceBtnDesktop.style.opacity = '0.5';
+                voiceBtnMobile.style.opacity = '0.5';
+                
+                return;
+            }
+            
+            state.voiceSupported = true;
+            console.log('✅ Speech recognition is supported');
+            
+            try {
+                state.recognition = new SpeechRecognition();
+                state.recognition.continuous = true;  // Changed from false to true for continuous recording
+                state.recognition.interimResults = true;
+                state.recognition.lang = state.selectedLanguage;
+                state.recognition.maxAlternatives = 1;
+                
+                state.recognition.onstart = () => {
+                    console.log('🎤 Voice recognition started');
+                    state.isRecording = true;
+                    updateVoiceUI(true);
+                };
+                
+                state.recognition.onresult = (event) => {
+                    console.log('📝 Voice result received');
+                    let transcript = '';
+                    let isFinal = false;
+                    
+                    // Collect all results
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        transcript += event.results[i][0].transcript;
+                        if (event.results[i].isFinal) {
+                            isFinal = true;
+                        }
+                    }
+                    
+                    // Update input field
+                    const input = state.currentVoiceTarget === 'mobile' ?
+                        document.getElementById('search-input-mobile') : 
+                        document.getElementById('search-input');
+                    
+                    input.value = transcript;
+                    
+                    // Update status display
+                    const voiceStatus = state.currentVoiceTarget === 'mobile' ?
+                        document.getElementById('voice-status-mobile') : 
+                        document.getElementById('voice-status');
+                    
+                    if (isFinal) {
+                        voiceStatus.textContent = `✅ Captured: "${transcript}"`;
+                        voiceStatus.className = 'voice-status success show';
+                        console.log('✅ Final transcript:', transcript);
+                    } else {
+                        voiceStatus.textContent = `🎤 Listening: "${transcript}"`;
+                        voiceStatus.className = 'voice-status listening show';
+                    }
+                };
+                
+                state.recognition.onerror = (event) => {
+                    console.error('❌ Speech recognition error:', event.error);
+                    
+                    // Don't stop recording for "no-speech" error in continuous mode
+                    if (event.error === 'no-speech' && state.recognition.continuous) {
+                        console.log('No speech detected, continuing to listen...');
+                        return;
+                    }
+                    
+                    state.isRecording = false;
+                    updateVoiceUI(false);
+                    
+                    const voiceStatus = state.currentVoiceTarget === 'mobile' ?
+                        document.getElementById('voice-status-mobile') : 
+                        document.getElementById('voice-status');
+                    
+                    let errorMessage = 'Voice input error';
+                    
+                    switch(event.error) {
+                        case 'no-speech':
+                            errorMessage = 'No speech detected. Click mic to try again.';
+                            break;
+                        case 'audio-capture':
+                            errorMessage = 'Microphone not found. Please check your device.';
+                            break;
+                        case 'not-allowed':
+                            errorMessage = 'Microphone permission denied. Please allow access.';
+                            showNotification('Please allow microphone access in your browser settings', 'error', 4000);
+                            break;
+                        case 'network':
+                            errorMessage = 'Network error. Please check your connection.';
+                            break;
+                        case 'aborted':
+                            errorMessage = 'Voice input stopped';
+                            break;
+                        default:
+                            errorMessage = `Voice error: ${event.error}`;
+                    }
+                    
+                    voiceStatus.textContent = errorMessage;
+                    voiceStatus.className = 'voice-status error show';
+                    
+                    setTimeout(() => {
+                        voiceStatus.classList.remove('show');
+                    }, 3000);
+                };
+                
+                state.recognition.onend = () => {
+                    console.log('🛑 Voice recognition ended');
+                    
+                    // Only update UI if we're not intentionally stopping
+                    if (state.isRecording) {
+                        console.log('Recognition ended unexpectedly, restarting...');
+                        // Auto-restart if it ended unexpectedly during continuous mode
+                        try {
+                            state.recognition.start();
+                        } catch (e) {
+                            console.error('Failed to restart:', e);
+                            state.isRecording = false;
+                            updateVoiceUI(false);
+                        }
+                    } else {
+                        updateVoiceUI(false);
+                        
+                        setTimeout(() => {
+                            const voiceStatus = state.currentVoiceTarget === 'mobile' ?
+                                document.getElementById('voice-status-mobile') : 
+                                document.getElementById('voice-status');
+                            voiceStatus.classList.remove('show');
+                        }, 3000);
+                    }
+                };
+                
+                console.log('✅ Voice recognition initialized successfully');
+                
+            } catch (error) {
+                console.error('❌ Failed to initialize voice recognition:', error);
+                state.voiceSupported = false;
+                showNotification('Voice input initialization failed', 'error');
+            }
+        }
+
+        function updateVoiceUI(isRecording) {
+            const voiceBtn = state.currentVoiceTarget === 'mobile' ? 
+                document.getElementById('voice-btn-mobile') : 
+                document.getElementById('voice-btn');
+            
+            const voiceStatus = state.currentVoiceTarget === 'mobile' ?
+                document.getElementById('voice-status-mobile') : 
+                document.getElementById('voice-status');
+            
+            if (isRecording) {
+                voiceBtn.classList.add('recording');
+                voiceBtn.textContent = '⏹️';  // Stop icon when recording
+                voiceBtn.title = 'Click to stop recording';
+                voiceStatus.textContent = '🎤 Listening continuously... Click mic to stop';
+                voiceStatus.className = 'voice-status listening show';
+            } else {
+                voiceBtn.classList.remove('recording');
+                voiceBtn.textContent = '🎤';  // Mic icon when not recording
+                voiceBtn.title = 'Click to start voice input';
+            }
+        }
+
+        function toggleVoice(isMobile) {
+            console.log('🎤 Voice button clicked. Mobile:', isMobile, 'Recording:', state.isRecording);
+            
+            if (!state.voiceSupported) {
+                showNotification('Voice input is not supported in this browser. Please use Chrome, Edge, or Safari.', 'error', 4000);
+                return;
+            }
+            
+            if (!state.recognition) {
+                console.error('❌ Recognition object not initialized');
+                showNotification('Voice input not available', 'error');
+                return;
+            }
+            
+            state.currentVoiceTarget = isMobile ? 'mobile' : 'desktop';
+            
+            if (state.isRecording) {
+                // Stop recording
+                console.log('🛑 Stopping voice recognition');
+                state.isRecording = false;  // Set flag first to prevent auto-restart
+                try {
+                    state.recognition.stop();
+                    updateVoiceUI(false);
+                    showNotification('Voice input stopped', 'info', 2000);
+                } catch (error) {
+                    console.error('Error stopping recognition:', error);
+                }
+            } else {
+                // Start recording
+                console.log('▶️ Starting continuous voice recognition with language:', state.selectedLanguage);
+                try {
+                    state.recognition.lang = state.selectedLanguage;
+                    state.recognition.start();
+                    console.log('✅ Recognition started successfully');
+                    showNotification('Voice input started - Speak continuously', 'success', 2000);
+                } catch (error) {
+                    console.error('❌ Error starting recognition:', error);
+                    
+                    if (error.message && error.message.includes('already started')) {
+                        state.recognition.stop();
+                        setTimeout(() => {
+                            try {
+                                state.recognition.start();
+                            } catch (e) {
+                                showNotification('Could not start voice input. Please try again.', 'error');
+                            }
+                        }, 100);
+                    } else {
+                        showNotification('Could not start voice input. Please ensure microphone access is allowed.', 'error', 4000);
+                    }
+                }
+            }
+        }
+
+        async function performSearch() {
+            if (!state.user) {
+                showNotification('Please sign in first', 'error');
+                return;
+            }
+            
+            const desktopInput = document.getElementById('search-input').value.trim();
+            const mobileInput = document.getElementById('search-input-mobile').value.trim();
+            const question = desktopInput || mobileInput;
+            
+            if (!question) {
+                showNotification('Please enter a question', 'warning');
+                return;
+            }
+
+            // Stop voice input if it's recording
+            if (state.isRecording) {
+                state.isRecording = false;
+                if (state.recognition) {
+                    try {
+                        state.recognition.stop();
+                    } catch (e) {
+                        console.error('Error stopping recognition:', e);
+                    }
+                }
+            }
+            
+            const currentPreferences = {
+                standard: document.getElementById('standard-select').value || null,
+                subject: document.getElementById('subject-select').value || null,
+                medium: document.getElementById('medium-select').value || null
+            };
+            
+            state.preferences = currentPreferences;
+            
+            if (!currentPreferences.standard && !currentPreferences.subject) {
+                const proceed = confirm('No standard or subject selected. This will search ALL documents. Continue?');
+                if (!proceed) return;
+            }
+            
+            const isMobile = window.innerWidth <= 968;
+            const resultsCard = isMobile ? document.getElementById('results-card-mobile') : document.getElementById('results-card');
+            const resultsContent = isMobile ? document.getElementById('results-content-mobile') : document.getElementById('results-content');
+            const searchBtn = isMobile ? document.getElementById('search-btn-mobile') : document.getElementById('search-btn');
+            
+            resultsCard.classList.add('show');
+            resultsContent.innerHTML = '<div class="loading"><div class="spinner"></div><p style="margin-top: 1rem; color: var(--gray);">Searching with your preferences...</p></div>';
+            searchBtn.disabled = true;
+            searchBtn.textContent = 'Searching...';
+            
+            const startTime = Date.now();
+            
+            try {
+                const requestBody = {
+                    question: question,
+                    limit: 5,
+                    threshold: 0.5,
+                    preferences: {
+                        standard: currentPreferences.standard || null,
+                        subject: currentPreferences.subject || null,
+                        medium: currentPreferences.medium || null
+                    }
+                };
+                
+                console.log('🔍 Sending search request:', requestBody);
+                
+                const response = await fetch(`${CONFIG.API_URL}/rag`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${state.token}`,
+                       
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Search failed');
+                }
+                
+                const data = await response.json();
+                const responseTime = ((Date.now() - startTime) / 1000).toFixed(2);
+                
+                console.log('✅ Search response:', data);
+                console.log("🔍 DEBUG - Response Keys:", Object.keys(data));
+                console.log("🔍 DEBUG - Has sourceContexts?", !!data.sourceContexts);
+                if (data.sourceContexts) console.log("🔍 DEBUG - sourceContexts length:", data.sourceContexts.length);
+                if (data.sourceContexts && data.sourceContexts[0]) {
+                    console.log("🔍 DEBUG - First source sample:", data.sourceContexts[0]);
+                }
+                
+                state.chatId = data.chatId;
+                state.answerText = data.answer;
+                
+                displayResults(data, question, responseTime, currentPreferences);
+                
+                if (state.user) {
+                    state.user.searchCount = (state.user.searchCount || 0) + 1;
+                    document.getElementById('search-count').textContent = state.user.searchCount;
+                    saveSession();
+                }
+                
+                loadHistory();
+                document.getElementById('search-input').value = '';
+                document.getElementById('search-input-mobile').value = '';
+                
+                setTimeout(() => {
+                    resultsCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 100);
+                
+            } catch (error) {
+                console.error('Search error:', error);
+                resultsContent.innerHTML = `<div class="no-history">Search failed: ${error.message}<br>Please try again.</div>`;
+                showNotification('Search failed: ' + error.message, 'error');
+            } finally {
+                searchBtn.disabled = false;
+                searchBtn.textContent = 'Search';
+            }
+        }
+
+// FIXED displayResults function for Router-based RAG responses
+function displayResults(data, question, responseTime, appliedPreferences) {
+    console.log("🔍 DEBUG - Full Response Data:", JSON.stringify(data, null, 2));
+    const isMobile = window.innerWidth <= 968;
+    const resultsContent = isMobile ? document.getElementById('results-content-mobile') : document.getElementById('results-content');
+    
+    // Check if we have any content to display
+    if (!data.htmlContent && !data.answer && !data.aiExplanation) {
+        resultsContent.innerHTML = `
+            <div class="no-history">
+                <p>No information found with current preferences.</p>
+                <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--gray);">
+                    Try: <br>
+                    • Changing your standard or subject<br>
+                    • Using different keywords<br>
+                    • Removing some filters
+                </p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Determine confidence badge
+    let confidenceClass = 'badge-low';
+    let confidenceText = 'Low';
+    if (data.confidence >= 0.8) {
+        confidenceClass = 'badge-high';
+        confidenceText = 'High';
+    } else if (data.confidence >= 0.5) {
+        confidenceClass = 'badge-medium';
+        confidenceText = 'Medium';
+    }
+    
+    // Format preference labels
+    const standardLabel = appliedPreferences.standard ? `Class ${appliedPreferences.standard}` : 'All Standards';
+    const subjectLabel = appliedPreferences.subject ? 
+        appliedPreferences.subject.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 
+        'All Subjects';
+    const mediumLabel = appliedPreferences.medium ? 
+        appliedPreferences.medium.charAt(0).toUpperCase() + appliedPreferences.medium.slice(1) : 
+        'English';
+    
+    // Start building the result HTML
+    let resultHTML = `
+        <div class="result-item">
+            <div class="result-question-box">
+                <div class="result-question-label">Your Question</div>
+                <div class="result-question-text">${escapeHtml(question)}</div>
+            </div>
+            
+            <div class="result-meta">
+                <span class="badge ${confidenceClass}">Confidence: ${confidenceText} ${data.confidence ? `(${(data.confidence * 100).toFixed(1)}%)` : ''}</span>
+                <span class="badge">⏱️ ${responseTime}s</span>
+                ${data.cached ? '<span class="badge badge-high">⚡ Cached</span>' : ''}
+                ${data.modelUsed ? `<span class="badge">🤖 ${data.modelUsed}</span>` : ''}
+                ${data.templateName ? `<span class="badge">📋 ${data.templateName}</span>` : ''}
+            </div>
+            
+            <div style="background: linear-gradient(135deg, #e0e7ff 0%, #ddd6fe 100%); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                <div style="font-weight: 600; color: var(--primary); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>🎯</span>
+                    <span>Filters Applied:</span>
+                </div>
+                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                    <span class="badge" style="background: white; color: var(--dark); border: 2px solid var(--primary);">
+                        📚 ${standardLabel}
+                    </span>
+                    <span class="badge" style="background: white; color: var(--dark); border: 2px solid var(--primary);">
+                        📖 ${subjectLabel}
+                    </span>
+                    <span class="badge" style="background: white; color: var(--dark); border: 2px solid var(--primary);">
+                        🌐 ${mediumLabel}
+                    </span>
+                </div>
+            </div>
+    `;
+
+    // ============================================================================
+    // MAIN ANSWER CONTENT - Router-based (htmlContent) or Legacy (answer/explanation)
+    // ============================================================================
+    
+    if (data.htmlContent) {
+        // ROUTER MODE: Display the pre-formatted HTML content from templates
+        console.log("✅ Displaying htmlContent from router");
+        resultHTML += `
+            <div class="answer-section ai-explanation-section">
+                <div class="answer-section-header">
+                    💡 AI Answer (${data.templateName || 'Template-based'})
+                </div>
+                <div class="answer-section-content">
+                    <div class="answer-content">
+                        ${data.htmlContent}
+                    </div>
+                </div>
+            </div>
+        `;
+    } else {
+        // LEGACY MODE: Display originalDefinition and/or aiExplanation
+        console.log("⚠️ No htmlContent, using legacy format");
+        
+        if (data.originalDefinition) {
+            const formattedOriginal = formatMarkdown(data.originalDefinition);
+            resultHTML += `
+                <div class="answer-section original-definition-section">
+                    <div class="answer-section-header">
+                        📚 Original Explanation (From Textbook)
+                    </div>
+                    <div class="answer-section-content">
+                        <div class="answer-content">${formattedOriginal}</div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        if (data.aiExplanation) {
+            const formattedAI = formatMarkdown(data.aiExplanation);
+            resultHTML += `
+                <div class="answer-section ai-explanation-section">
+                    <div class="answer-section-header">
+                        🤖 AI Explanation (In Simple Words)
+                    </div>
+                    <div class="answer-section-content">
+                        <div class="answer-content">${formattedAI}</div>
+                    </div>
+                </div>
+            `;
+        } else if (data.answer && !data.originalDefinition) {
+            const formattedAnswer = formatMarkdown(data.answer);
+            resultHTML += `
+                <div class="answer-section ai-explanation-section">
+                    <div class="answer-section-header">
+                        💡 Answer
+                    </div>
+                    <div class="answer-section-content">
+                        <div class="answer-content">${formattedAnswer}</div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+    
+    // ============================================================================
+    // EXPANDABLE SOURCES SECTION WITH IMAGE DISPLAY
+    // ============================================================================
+    
+    if (data.sources && data.sources.length > 0) {
+        console.log("✅ Found sources:", data.sources.length, "sources");
+        console.log("🔍 First source sample:", data.sources[0]);
+        
+        resultHTML += `
+            <div class="source-contexts-section">
+                <div class="source-contexts-header">
+                    📚 Reference Sources (${data.sources.length})
+                </div>
+        `;
+        
+        data.sources.forEach((source, index) => {
+            console.log(`📖 Source ${index + 1}:`, source);
+            
+            const fs = source.metadata || {};
+            const pageNum = source.page_number || source.page || fs.page || 'N/A';
+            const sourceStandard = fs.standard || 'N/A';
+            const sourceSubject = fs.subject || 'N/A';
+            const sourceMedium = fs.language || 'English';
+            const sourceText = source.text || source.content || '';
+            const blobUrl = source.provenance?.blob_url || source.blob_url || '';
+            
+            console.log(`📄 Source ${index + 1} details:`, {
+                page: pageNum,
+                standard: sourceStandard,
+                subject: sourceSubject,
+                textLength: sourceText.length,
+                hasImage: !!blobUrl
+            });
+            
+            resultHTML += `
+                <div class="source-item" id="source-${index}">
+                    <div class="source-header" onclick="toggleSource(${index})">
+                        <div class="source-header-content">
+                            <div class="source-number">${index + 1}</div>
+                            <div class="source-tags">
+                                <span class="source-tag page">📄 Page ${escapeHtml(String(pageNum))}</span>
+                                <span class="source-tag grade">🎓 Class ${escapeHtml(String(sourceStandard))}</span>
+                                <span class="source-tag subject">📖 ${escapeHtml(String(sourceSubject))}</span>
+                            </div>
+                        </div>
+                        <div class="expand-icon">▼</div>
+                    </div>
+                    <div class="source-content">
+                        <div class="source-text-container">
+                            <div class="source-text-label">📄 Source Page Image</div>
+            `;
+            
+            if (blobUrl) {
+                resultHTML += `
+                            <div class="source-image-container">
+                                <img src="${escapeHtml(blobUrl)}" 
+                                     alt="Page ${escapeHtml(String(pageNum))}" 
+                                     class="source-image"
+                                     onclick="window.open('${escapeHtml(blobUrl)}', '_blank')"
+                                     onerror="this.parentElement.innerHTML='<div class=\\'source-image-error\\'>❌ Failed to load image</div>'"
+                                     loading="lazy">
+                            </div>
+                `;
+            } else {
+                resultHTML += `
+                            <div class="source-image-error">
+                                ⚠️ No image available for this source
+                            </div>
+                `;
+            }
+            
+            // Optionally show text excerpt if available
+            if (sourceText && sourceText.length > 0) {
+                const truncatedText = sourceText.length > 500 ? 
+                    sourceText.substring(0, 500) + '...' : 
+                    sourceText;
+                
+                resultHTML += `
+                            <div class="source-text-label" style="margin-top: 1rem;">📝 Text Excerpt</div>
+                            <div class="source-full-text">
+                                ${escapeHtml(truncatedText)}
+                            </div>
+                `;
+            }
+            
+            resultHTML += `
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        resultHTML += `</div>`;
+    } else {
+        console.log("❌ No sources found in response");
+    }
+    
+    // ============================================================================
+    // RELATED TOPICS
+    // ============================================================================
+    
+    if (data.relatedTopics && data.relatedTopics.length > 0) {
+        resultHTML += `
+            <div class="related-topics-section">
+                <div class="related-topics-header">
+                    🔗 Explore Related Topics
+                </div>
+                <div class="related-topics-grid">
+        `;
+        
+        data.relatedTopics.forEach(topic => {
+            resultHTML += `
+                <button class="related-topic-btn" onclick="searchRelatedTopic('${escapeHtml(topic).replace(/'/g, "\\'")}')">
+                    <span>➜</span>
+                    <span>${escapeHtml(topic)}</span>
+                </button>
+            `;
+        });
+        
+        resultHTML += `
+                </div>
+            </div>
+        `;
+    }
+    
+    // ============================================================================
+    // ACTION BUTTONS
+    // ============================================================================
+    
+    resultHTML += `
+            <div class="result-actions">
+                <button class="btn btn-primary" onclick="copyAnswer()">📋 Copy Answer</button>
+                <button class="btn" id="like-btn" onclick="submitFeedback('like')">👍 Like</button>
+                <button class="btn" id="dislike-btn" onclick="submitFeedback('dislike')">👎 Dislike</button>
+                <button class="btn" id="report-btn" onclick="submitFeedback('report')">🚩 Report</button>
+            </div>
+        </div>
+    `;
+    
+    // Set the HTML and render math
+    resultsContent.innerHTML = resultHTML;
+    renderMath();
+}
+        function searchRelatedTopic(topic) {
+            const isMobile = window.innerWidth <= 968;
+            if (isMobile) {
+                document.getElementById('search-input-mobile').value = topic;
+            } else {
+                document.getElementById('search-input').value = topic;
+            }
+            
+            showNotification(`Searching for: ${topic}`, 'info', 2000);
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            setTimeout(() => {
+                performSearch();
+            }, 500);
+        }
+
+        function toggleSource(index) {
+            const sourceItem = document.getElementById(`source-${index}`);
+            if (sourceItem) {
+                sourceItem.classList.toggle('expanded');
+            }
+        }
+
+        function formatMarkdown(text) {
+            let html = text;
+            
+            html = html.replace(/\\\[([\s\S]*?)\\\]/g, '<div class="math-display">\\[$1\\]</div>');
+            
+            html = html.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
+            html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+            html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+            html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+            
+            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+            
+            const lines = html.split('\n');
+            let inList = false;
+            const processed = [];
+            
+            for (let line of lines) {
+                if (line.match(/^[\s]*[-*]\s+/)) {
+                    if (!inList) {
+                        processed.push('<ul>');
+                        inList = true;
+                    }
+                    processed.push('<li>' + line.replace(/^[\s]*[-*]\s+/, '') + '</li>');
+                } else {
+                    if (inList) {
+                        processed.push('</ul>');
+                        inList = false;
+                    }
+                    processed.push(line);
+                }
+            }
+            if (inList) processed.push('</ul>');
+            
+            html = processed.join('\n');
+            
+            html = html.replace(/\n\n+/g, '</p><p>');
+            html = '<p>' + html + '</p>';
+            html = html.replace(/<p><\/p>/g, '');
+            html = html.replace(/\n/g, '<br>');
+            
+            return html;
+        }
+
+        function renderMath() {
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise().catch(err => console.error('MathJax error:', err));
+            }
+        }
+
+        function copyAnswer() {
+            if (!state.answerText) {
+                showNotification('No answer to copy', 'error');
+                return;
+            }
+            
+            navigator.clipboard.writeText(state.answerText)
+                .then(() => showNotification('Copied to clipboard! ✓', 'success', 2000))
+                .catch(() => showNotification('Copy failed', 'error'));
+        }
+
+        async function submitFeedback(type) {
+            if (!state.chatId) {
+                showNotification('No active chat', 'error');
+                return;
+            }
+            
+            const likeBtn = document.getElementById('like-btn');
+            const dislikeBtn = document.getElementById('dislike-btn');
+            const reportBtn = document.getElementById('report-btn');
+            
+            if (!likeBtn || !dislikeBtn || !reportBtn) {
+                console.error('Feedback buttons not found');
+                return;
+            }
+            
+            [likeBtn, dislikeBtn, reportBtn].forEach(btn => {
+                btn.classList.remove('active-like', 'active-dislike', 'active-report');
+            });
+            
+            if (type === 'like') likeBtn.classList.add('active-like');
+            if (type === 'dislike') dislikeBtn.classList.add('active-dislike');
+            if (type === 'report') reportBtn.classList.add('active-report');
+            
+            try {
+                const response = await fetch(`${CONFIG.API_URL}/feedback`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${state.token}`,
+                       
+                    },
+                    body: JSON.stringify({
+                        chatId: state.chatId,
+                        feedbackType: type,
+                        timestamp: new Date().toISOString()
+                    })
+                });
+                
+                if (!response.ok) throw new Error('Feedback failed');
+                
+                const messages = {
+                    like: '👍 Thanks for your feedback!',
+                    dislike: '👎 Feedback noted. We\'ll improve!',
+                    report: '🚩 Issue reported. We\'ll review it!'
+                };
+                
+                showNotification(messages[type], 'success', 2000);
+            } catch (error) {
+                console.error('Feedback error:', error);
+                showNotification('Failed to submit feedback', 'error');
+            }
+        }
+
+        async function loadHistory() {
+            if (!state.user) return;
+            
+            try {
+                const response = await fetch(`${CONFIG.API_URL}/user/chat-history?page=1&limit=20`, {
+                    headers: {
+                        'Authorization': `Bearer ${state.token}`,
+                       
+                    }
+                });
+                
+                if (!response.ok) return;
+                
+                const data = await response.json();
+                displayHistory(data.chatHistory || []);
+            } catch (error) {
+                console.error('History error:', error);
+            }
+        }
+
+        function displayHistory(history) {
+            const historyList = document.getElementById('history-list');
+            
+            if (history.length === 0) {
+                historyList.innerHTML = '<div class="no-history">No history yet</div>';
+                return;
+            }
+            
+            historyList.innerHTML = history.map(item => `
+                <div class="history-item" onclick="rerunSearch('${escapeHtml(item.question).replace(/'/g, "\\'")}')">
+                    <div class="history-question">${escapeHtml(item.question)}</div>
+                    <div class="history-date">${new Date(item.timestamp).toLocaleDateString()}</div>
+                </div>
+            `).join('');
+        }
+
+        function rerunSearch(question) {
+            const isMobile = window.innerWidth <= 968;
+            if (isMobile) {
+                document.getElementById('search-input-mobile').value = question;
+            } else {
+                document.getElementById('search-input').value = question;
+            }
+            performSearch();
+        }
+
+        function showNotification(message, type = 'info', duration = 3000) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type} show`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, duration);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        window.copyAnswer = copyAnswer;
+        window.submitFeedback = submitFeedback;
+        window.rerunSearch = rerunSearch;
+        window.searchRelatedTopic = searchRelatedTopic;
+        window.toggleSource = toggleSource;
+    </script>
+</body>
+</html>
