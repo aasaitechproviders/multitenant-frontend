@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Dashboard - Aasai School</title>
+    <title>Aasai SmartEDU - AI Learning Assistant</title>
     <script>
     window.MathJax = {
         tex: {
@@ -13,6 +13,7 @@
     };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     
     <style>
         * {
@@ -71,15 +72,21 @@
             display: flex;
             align-items: center;
             gap: 1rem;
+            flex-shrink: 0;
         }
 
         .user-profile {
-            display: flex;
+            display: none;
             align-items: center;
             gap: 0.8rem;
             padding: 0.5rem 1rem;
             background: var(--light);
             border-radius: 25px;
+            flex-shrink: 0;
+        }
+
+        .user-profile.active {
+            display: flex;
         }
 
         .user-avatar {
@@ -129,6 +136,26 @@
             margin: 0 auto;
         }
 
+        .auth-screen {
+            background: white;
+            border-radius: 16px;
+            padding: 3rem;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 500px;
+            margin: 2rem auto;
+        }
+
+        .auth-screen h2 {
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+
+        .auth-screen p {
+            color: var(--gray);
+            margin-bottom: 2rem;
+        }
+
         .main-content {
             display: grid;
             grid-template-columns: 350px 1fr;
@@ -159,6 +186,10 @@
             margin-bottom: 1rem;
         }
 
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+
         .form-group label {
             display: block;
             font-weight: 500;
@@ -167,753 +198,2760 @@
             font-size: 0.9rem;
         }
 
-        .form-group select {
+        .form-select {
             width: 100%;
             padding: 0.75rem;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            font-size: 0.95rem;
-            background: white;
-            cursor: pointer;
-        }
-
-        .form-group select:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-
-        .question-input-container {
-            position: relative;
-        }
-
-        .question-input {
-            width: 100%;
-            min-height: 120px;
-            padding: 1rem;
             border: 2px solid var(--border);
-            border-radius: 12px;
-            font-size: 1rem;
-            font-family: inherit;
-            resize: vertical;
+            border-radius: 8px;
+            font-size: 0.9rem;
             transition: all 0.2s;
         }
 
-        .question-input:focus {
+        .form-select:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
         }
 
-        .voice-btn {
-            position: absolute;
-            right: 1rem;
-            bottom: 1rem;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: none;
-            background: var(--primary);
-            color: white;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-        }
-
-        .voice-btn:hover {
-            background: var(--secondary);
-        }
-
-        .voice-btn.recording {
-            background: var(--danger);
-            animation: pulse 1s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-
-        .ask-btn {
-            width: 100%;
-            padding: 1rem;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-
-        .ask-btn:hover {
-            transform: translateY(-2px);
-        }
-
-        .ask-btn:disabled {
-            opacity: 0.6;
+        .form-select:disabled {
+            background: #f0f0f0;
             cursor: not-allowed;
-            transform: none;
         }
 
-        .chat-container {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: column;
-            height: calc(100vh - 250px);
-        }
-
-        .chat-header {
-            padding: 1.5rem;
-            border-bottom: 1px solid var(--border);
+        .history-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 1rem;
         }
 
-        .chat-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: var(--dark);
-        }
-
-        .clear-chat-btn {
-            padding: 0.5rem 1rem;
-            background: var(--light);
+        .refresh-btn {
+            background: none;
             border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            color: var(--primary);
+            font-size: 1.2rem;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .refresh-btn:hover {
+            background: var(--light);
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            padding: 0.75rem;
+            background: var(--light);
             border-radius: 8px;
             cursor: pointer;
-            color: var(--dark);
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .history-item:hover {
+            background: #e0e7ff;
+            border-left-color: var(--primary);
+        }
+
+        .history-question {
             font-weight: 500;
+            font-size: 0.9rem;
+            color: var(--dark);
+            margin-bottom: 0.25rem;
         }
 
-        .clear-chat-btn:hover {
-            background: var(--border);
+        .history-date {
+            font-size: 0.75rem;
+            color: var(--gray);
         }
 
-        .chat-messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 1.5rem;
+        .no-history {
+            text-align: center;
+            padding: 2rem;
+            color: var(--gray);
+        }
+
+        .content-area {
             display: flex;
             flex-direction: column;
             gap: 1.5rem;
         }
 
-        .message {
+        .search-card {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .search-card-mobile {
+            display: none;
+        }
+
+        .search-card-desktop {
+            display: block;
+        }
+
+        .search-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .search-header h2 {
+            font-size: 1.75rem;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .search-header p {
+            color: var(--gray);
+        }
+
+        .language-select-wrapper {
             display: flex;
+            align-items: center;
+            justify-content: center;
             gap: 1rem;
-            animation: slideIn 0.3s ease-out;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: var(--light);
+            border-radius: 8px;
         }
 
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
+        .language-select-wrapper label {
+            font-weight: 500;
+            color: var(--dark);
+        }
+
+        .language-select {
+            padding: 0.5rem 1rem;
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            background: white;
+        }
+
+        .voice-status {
+            text-align: center;
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .voice-status.show {
+            display: block;
+        }
+
+        .voice-status.listening {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            color: #92400e;
+            border: 2px solid #fbbf24;
+        }
+
+        .voice-status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 2px solid #ef4444;
+        }
+
+        .voice-status.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 2px solid #10b981;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            border: none;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .voice-btn {
+            padding: 1rem 1.5rem;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 1.3rem;
+            transition: all 0.3s ease;
+            position: relative;
+            min-width: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .voice-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            transform: scale(1.05);
+        }
+
+        .voice-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            background: #94a3b8;
+        }
+
+        .voice-btn:active:not(:disabled) {
+            transform: scale(0.95);
+        }
+
+        /* RECORDING STATE - ENHANCED PULSING RED */
+        .voice-btn.recording {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            animation: pulse-glow 1.5s ease-in-out infinite;
+        }
+
+        .voice-btn.recording::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(239, 68, 68, 0.4) 0%, transparent 70%);
+            border-radius: inherit;
+            animation: pulse-ring 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { 
                 opacity: 1;
-                transform: translateY(0);
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+            50% { 
+                opacity: 0.85;
+                box-shadow: 0 0 20px 10px rgba(239, 68, 68, 0.4);
             }
         }
 
-        .message.user {
-            flex-direction: row-reverse;
+        @keyframes pulse-ring {
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1.5);
+                opacity: 0;
+            }
         }
 
-        .message-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
+        .search-btn {
+            padding: 1rem 2rem;
             background: var(--primary);
             color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .search-btn:hover {
+            background: var(--secondary);
+        }
+
+        .search-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .results-card {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .results-card.show {
+            display: block;
+        }
+
+        .results-card-mobile {
+            display: none !important;
+        }
+
+        .results-card-desktop {
+            display: none;
+        }
+
+        .results-card-desktop.show {
+            display: block;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .results-header h3 {
+            font-size: 1.5rem;
+            color: var(--primary);
+        }
+
+        .result-item {
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%);
+            border-radius: 12px;
+            border: 2px solid var(--border);
+        }
+
+        .result-question-box {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+            margin-bottom: 1.5rem;
+        }
+
+        .result-question-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--primary);
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .result-question-text {
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--dark);
+        }
+
+        .result-meta {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .badge-high {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-medium {
+            background: #fed7aa;
+            color: #92400e;
+        }
+
+        .badge-low {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .answer-section {
+            margin-bottom: 2rem;
+        }
+
+        .answer-section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            border-radius: 8px 8px 0 0;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .answer-section-content {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 0 0 8px 8px;
+            border: 2px solid var(--border);
+            border-top: none;
+        }
+
+        .original-definition-section .answer-section-header {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .ai-explanation-section .answer-section-header {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        }
+
+        .answer-content {
+            line-height: 1.8;
+            color: var(--dark);
+        }
+
+        .answer-content h1,
+        .answer-content h2,
+        .answer-content h3,
+        .answer-content h4 {
+            margin: 1.5rem 0 1rem;
+            color: var(--primary);
+        }
+
+        .answer-content h1 {
+            font-size: 1.75rem;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 0.5rem;
+        }
+
+        .answer-content h2 {
+            font-size: 1.5rem;
+        }
+
+        .answer-content h3 {
+            font-size: 1.25rem;
+        }
+
+        .answer-content p {
+            margin-bottom: 1rem;
+        }
+
+        .answer-content ul,
+        .answer-content ol {
+            margin: 1rem 0 1rem 2rem;
+        }
+
+        .answer-content li {
+            margin-bottom: 0.5rem;
+        }
+
+        .answer-content strong {
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .math-display {
+            text-align: center;
+            margin: 1.5rem 0;
+            padding: 1rem;
+            background: var(--light);
+            border-radius: 8px;
+        }
+
+        .source-contexts-section {
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            background: #fef3c7;
+            border-radius: 8px;
+            border-left: 4px solid #f59e0b;
+        }
+
+        .source-contexts-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            color: #92400e;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+
+        .source-item {
+            background: white;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 0.75rem;
+            border-left: 3px solid #f59e0b;
+        }
+
+        .source-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .source-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .source-relevance {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .source-relevance.high {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .source-relevance.medium {
+            background: #fed7aa;
+            color: #92400e;
+        }
+
+        .source-relevance.low {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .source-text {
+            font-size: 0.9rem;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        .related-topics-section {
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #e0e7ff 0%, #ddd6fe 100%);
+            border-radius: 8px;
+        }
+
+
+        /* EXPANDABLE SOURCE STYLES - NEW ADDITION */
+        .source-item {
+            background: white;
+            padding: 0;
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            border: 2px solid var(--border);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .source-item.expanded {
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.15);
+        }
+
+        .source-header {
+            padding: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: white;
+            transition: all 0.2s;
+        }
+
+        .source-header:hover {
+            background: #f0f9ff;
+        }
+
+        .source-header-content {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex: 1;
+        }
+
+        .source-number {
+            background: var(--primary);
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 600;
+            font-size: 0.85rem;
             flex-shrink: 0;
         }
 
-        .message.user .message-avatar {
-            background: var(--success);
-        }
-
-        .message-content {
+        .source-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
             flex: 1;
-            max-width: 80%;
         }
 
-        .message.user .message-content {
-            text-align: right;
-        }
-
-        .message-bubble {
-            padding: 1rem 1.25rem;
-            border-radius: 16px;
-            background: var(--light);
-            display: inline-block;
-            text-align: left;
-        }
-
-        .message.user .message-bubble {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-        }
-
-        .message-text {
-            font-size: 0.95rem;
-            line-height: 1.6;
-            word-wrap: break-word;
-        }
-
-        .message-meta {
-            margin-top: 0.5rem;
+        .source-tag {
+            padding: 0.25rem 0.6rem;
+            border-radius: 4px;
             font-size: 0.75rem;
-            color: var(--gray);
+            font-weight: 500;
         }
 
-        .message.user .message-meta {
-            color: rgba(255,255,255,0.8);
+        .source-tag.page {
+            background: #dbeafe;
+            color: #1e40af;
         }
 
-        .answer-section {
-            margin-top: 1rem;
+        .source-tag.grade {
+            background: #dcfce7;
+            color: #166534;
         }
 
-        .sources {
-            margin-top: 1rem;
-            padding: 1rem;
-            background: #f0f9ff;
-            border-left: 3px solid var(--primary);
-            border-radius: 8px;
+        .source-tag.subject {
+            background: #fef3c7;
+            color: #92400e;
         }
 
-        .sources-title {
-            font-weight: 600;
+        .expand-icon {
             color: var(--primary);
+            font-size: 1.2rem;
+            transition: transform 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .source-item.expanded .expand-icon {
+            transform: rotate(180deg);
+        }
+
+        .source-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease;
+        }
+
+        .source-item.expanded .source-content {
+            max-height: 2000px;
+        }
+
+        .source-text-container {
+            padding: 1rem;
+            background: #f8fafc;
+            border-top: 1px solid var(--border);
+        }
+
+        .source-text-label {
+            font-weight: 600;
+            color: var(--gray);
             margin-bottom: 0.5rem;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+
+        .source-full-text {
+            color: var(--dark);
+            line-height: 1.6;
+            font-size: 0.9rem;
+            padding: 0.75rem;
+            background: white;
+            border-radius: 6px;
+            border-left: 3px solid var(--primary);
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        /* IMAGE DISPLAY STYLES FOR SOURCES */
+        .source-image-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            background: white;
+            border-radius: 6px;
+            border: 2px solid var(--border);
+            min-height: 200px;
+        }
+
+        .source-image {
+            max-width: 100%;
+            max-height: 600px;
+            width: auto;
+            height: auto;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .source-image:hover {
+            transform: scale(1.02);
+        }
+
+        .source-image-error {
+            color: var(--danger);
+            padding: 1rem;
+            text-align: center;
             font-size: 0.9rem;
         }
 
-        .source-item {
-            font-size: 0.85rem;
+        .source-image-loading {
             color: var(--gray);
-            margin-bottom: 0.25rem;
+            padding: 1rem;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .related-topics-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+
+        .related-topics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .related-topic-btn {
+            padding: 0.75rem 1rem;
+            background: white;
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            color: var(--primary);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .related-topic-btn:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(67, 97, 238, 0.3);
+        }
+
+        .result-actions {
+            display: flex;
+            gap: 0.75rem;
+            padding-top: 1rem;
+            border-top: 2px solid var(--border);
+            flex-wrap: wrap;
+            margin-top: 1.5rem;
+        }
+
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            border: 2px solid var(--border);
+            background: white;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: var(--light);
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .btn-primary:hover {
+            background: var(--secondary);
+        }
+
+        .btn.active-like {
+            background: #d1fae5;
+            border-color: #10b981;
+            color: #065f46;
+        }
+
+        .btn.active-dislike {
+            background: #fee2e2;
+            border-color: #ef4444;
+            color: #991b1b;
+        }
+
+        .btn.active-report {
+            background: #fed7aa;
+            border-color: #f59e0b;
+            color: #92400e;
         }
 
         .loading {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-            padding: 1rem;
+            text-align: center;
+            padding: 3rem;
         }
 
-        .loading-dot {
-            width: 8px;
-            height: 8px;
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--border);
+            border-top-color: var(--primary);
             border-radius: 50%;
-            background: var(--primary);
-            animation: bounce 1.4s infinite;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
         }
 
-        .loading-dot:nth-child(2) {
-            animation-delay: 0.2s;
-        }
-
-        .loading-dot:nth-child(3) {
-            animation-delay: 0.4s;
-        }
-
-        @keyframes bounce {
-            0%, 60%, 100% {
-                transform: translateY(0);
-            }
-            30% {
-                transform: translateY(-10px);
-            }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
         .notification {
             position: fixed;
-            top: 2rem;
-            right: 2rem;
+            top: 20px;
+            right: 20px;
             padding: 1rem 1.5rem;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
             z-index: 1000;
-            animation: slideInRight 0.3s ease-out;
+            transform: translateX(400px);
+            transition: transform 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
         }
 
-        @keyframes slideInRight {
-            from {
-                opacity: 0;
-                transform: translateX(100%);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
+        .notification.show {
+            transform: translateX(0);
         }
 
-        .notification.success {
-            border-left: 4px solid var(--success);
+        .notification.success { background: var(--success); }
+        .notification.error { background: var(--danger); }
+        .notification.info { background: var(--primary); }
+        .notification.warning { background: var(--warning); }
+
+        footer {
+            background: #fafafa;
+            padding: 2rem;
+            text-align: center;
+            margin-top: auto;
+            border-top: 1px solid #e5e7eb;
         }
 
-        .notification.error {
-            border-left: 4px solid var(--danger);
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
         }
 
-        .notification.info {
-            border-left: 4px solid var(--primary);
+        .footer-links {
+            display: flex;
+            gap: 1.5rem;
         }
 
-        @media (max-width: 1024px) {
+        .footer-links a {
+            color: var(--gray);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary);
+        }
+
+        @media (max-width: 968px) {
             .main-content {
                 grid-template-columns: 1fr;
+                display: flex;
+                flex-direction: column;
             }
 
             .sidebar {
-                order: -1;
+                order: 2;
             }
-        }
 
-        @media (max-width: 640px) {
+            .content-area {
+                order: 1;
+            }
+
+            .search-card-desktop {
+                display: none !important;
+            }
+
+            .search-card-mobile {
+                display: block;
+            }
+
+            .results-card-desktop {
+                display: none !important;
+            }
+
+            .results-card-mobile {
+                display: none !important;
+            }
+
+            .results-card-mobile.show {
+                display: block !important;
+            }
+
             .header-container {
                 padding: 1rem;
             }
 
-            main {
-                padding: 1rem;
+            .logo {
+                font-size: 1.2rem;
             }
 
             .user-details {
                 display: none;
             }
 
-            .chat-container {
-                height: calc(100vh - 200px);
+            .user-section {
+                gap: 0.5rem;
+            }
+
+            main {
+                padding: 1rem;
+            }
+
+            .search-card,
+            .results-card,
+            .card {
+                padding: 1.5rem;
+            }
+
+            .search-box {
+                flex-direction: column;
+            }
+
+            .search-input {
+                border-bottom: 1px solid var(--border);
+            }
+
+            .voice-btn {
+                font-size: 1.2rem;
+                padding: 1rem 1.2rem;
+                min-width: 50px;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .result-actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .related-topics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-content {
+                flex-direction: column;
+                text-align: center;
             }
         }
+        /* ============================================================================
+   AASAI SMARTEDU - Mathematical Formula Styling
+   Proper rendering of formulas without LaTeX/MathJax dependency
+   ============================================================================ */
+
+/* Mathematical Formula Container */
+.math {
+  font-family: 'Times New Roman', 'Cambria Math', serif;
+  font-style: italic;
+  font-size: 1.05em;
+  display: inline-block;
+  padding: 2px 4px;
+  background: #f9f9f9;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+/* Highlight important formulas */
+.math.highlight {
+  background: #fff9e6;
+  padding: 4px 8px;
+  border: 1px solid #ffe4a3;
+  font-weight: 500;
+}
+
+/* Block-level formula (centered) */
+.math-block {
+  font-family: 'Times New Roman', 'Cambria Math', serif;
+  font-style: italic;
+  font-size: 1.1em;
+  display: block;
+  text-align: center;
+  padding: 10px;
+  margin: 15px 0;
+  background: #f5f5f5;
+  border-left: 4px solid #2196f3;
+  border-radius: 4px;
+}
+
+/* Numerical Solution Styling */
+.numerical-solution {
+  background: #ffffff;
+  padding: 20px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  margin: 10px 0;
+}
+
+.numerical-solution p {
+  margin: 10px 0;
+  line-height: 1.6;
+}
+
+.numerical-solution ul {
+  list-style-type: none;
+  padding-left: 20px;
+}
+
+.numerical-solution ul li {
+  margin: 5px 0;
+  padding-left: 5px;
+}
+
+.numerical-solution .formula-note {
+  color: #555;
+  font-size: 0.95em;
+  margin-top: 5px;
+}
+
+/* Final Answer Highlight */
+.final-answer {
+  background: #fff9e6;
+  padding: 12px 16px;
+  border-left: 5px solid #ffb300;
+  margin: 15px 0;
+  border-radius: 4px;
+}
+
+.final-answer strong {
+  color: #e65100;
+  font-size: 1.1em;
+}
+
+/* Derivation Styling */
+.derivation {
+  background: #fafafa;
+  padding: 20px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+}
+
+.derivation table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 15px 0;
+  background: #fff;
+}
+
+.derivation table td {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.derivation table tr:hover {
+  background: #f5f5f5;
+}
+
+.derived-result {
+  background: #e3f2fd;
+  padding: 15px;
+  border-left: 5px solid #2196f3;
+  margin: 15px 0;
+  text-align: center;
+  border-radius: 4px;
+}
+
+.derived-result strong {
+  color: #1565c0;
+  font-size: 1.15em;
+}
+
+/* Chemical Equation Styling */
+.chemical-equation {
+  background: #ffffff;
+  padding: 20px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+}
+
+.chemical-equation .equation {
+  background: #f5f5f5;
+  padding: 15px;
+  margin: 15px 0;
+  text-align: center;
+  font-size: 1.15em;
+  border: 2px solid #4caf50;
+  border-radius: 5px;
+  font-family: 'Arial', sans-serif;
+}
+
+.chemical-equation sub {
+  font-size: 0.75em;
+  vertical-align: sub;
+}
+
+.chemical-equation sup {
+  font-size: 0.75em;
+  vertical-align: super;
+}
+
+.chemical-equation table {
+  margin-top: 15px;
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.chemical-equation table th,
+.chemical-equation table td {
+  padding: 10px;
+  border: 1px solid #ddd;
+  text-align: center;
+}
+
+.chemical-equation table th {
+  background: #f0f0f0;
+  font-weight: 600;
+}
+
+/* Physics/Math Symbols and Units */
+.unit {
+  font-family: 'Arial', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  margin-left: 3px;
+}
+
+.variable {
+  font-family: 'Times New Roman', serif;
+  font-style: italic;
+}
+
+/* Subscripts and Superscripts */
+sub {
+  font-size: 0.75em;
+  vertical-align: sub;
+  line-height: 0;
+}
+
+sup {
+  font-size: 0.75em;
+  vertical-align: super;
+  line-height: 0;
+}
+
+/* General Answer Container */
+.answer {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.8;
+  color: #333;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 15px;
+}
+
+.answer h4 {
+  color: #1976d2;
+  margin: 15px 0 10px 0;
+  font-size: 1.1em;
+  border-bottom: 2px solid #e3f2fd;
+  padding-bottom: 5px;
+}
+
+.answer h5 {
+  color: #424242;
+  margin: 12px 0 8px 0;
+  font-size: 1em;
+}
+
+.answer p {
+  margin: 8px 0;
+}
+
+.answer ul, .answer ol {
+  margin: 10px 0;
+  padding-left: 30px;
+}
+
+.answer li {
+  margin: 5px 0;
+}
+
+.answer strong {
+  color: #1565c0;
+  font-weight: 600;
+}
+
+.answer em {
+  color: #666;
+  font-style: italic;
+}
+
+/* Note/Tip Styling */
+.note {
+  background: #e8f5e9;
+  border-left: 4px solid #4caf50;
+  padding: 10px 15px;
+  margin: 10px 0;
+  border-radius: 4px;
+  font-size: 0.95em;
+}
+
+.tip {
+  background: #fff3e0;
+  border-left: 4px solid #ff9800;
+  padding: 10px 15px;
+  margin: 10px 0;
+  border-radius: 4px;
+}
+
+/* Out of Syllabus Warning */
+.out-of-syllabus {
+  background: #fff3cd;
+  padding: 15px;
+  border-left: 4px solid #ffc107;
+  margin: 15px 0;
+  border-radius: 4px;
+}
+
+.out-of-syllabus strong {
+  color: #e65100;
+}
+
+/* Exam Strategy Box */
+.exam-strategy {
+  background: #e3f2fd;
+  padding: 15px;
+  border-left: 4px solid #2196f3;
+  margin: 15px 0;
+  border-radius: 4px;
+}
+
+.exam-strategy h4 {
+  color: #1565c0;
+  margin-top: 0;
+}
+
+.exam-strategy h5 {
+  color: #424242;
+  margin-top: 12px;
+  margin-bottom: 5px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .answer {
+    padding: 10px;
+    font-size: 0.95em;
+  }
+  
+  .math {
+    font-size: 1em;
+  }
+  
+  .math-block {
+    font-size: 1.05em;
+    padding: 8px;
+  }
+  
+  .numerical-solution,
+  .derivation,
+  .chemical-equation {
+    padding: 15px;
+  }
+  
+  .final-answer,
+  .derived-result {
+    padding: 10px;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .answer {
+    background: white;
+    color: black;
+  }
+  
+  .math, .math-block {
+    background: transparent;
+    border: none;
+  }
+  
+  .final-answer,
+  .derived-result,
+  .note,
+  .tip {
+    border: 1px solid #000;
+    background: transparent;
+  }
+  
+  .numerical-solution table,
+  .derivation table,
+  .chemical-equation table {
+    border: 1px solid #000;
+  }
+}
     </style>
 </head>
 <body>
+    <div id="notification" class="notification"></div>
+
     <header>
         <div class="header-container">
-            <div class="logo">
-                <span id="schoolName">Loading...</span>
-            </div>
+            <div class="logo">📚 Aasai SmartEDU</div>
             <div class="user-section">
-                <div class="user-profile">
-                    <img id="userAvatar" class="user-avatar" src="" alt="User">
+                <div id="google-signin-button"></div>
+                <div id="user-profile" class="user-profile">
+                    <img id="user-avatar" class="user-avatar" src="" alt="">
                     <div class="user-details">
-                        <div class="user-name" id="userName">Student</div>
-                        <div class="user-stats" id="userStats">Questions: 0</div>
+                        <div id="user-name" class="user-name"></div>
+                        <div class="user-stats"><span id="search-count">0</span> searches</div>
                     </div>
                 </div>
-                <button class="sign-out-btn" id="signOutBtn">Logout</button>
+                <button id="sign-out-btn" class="sign-out-btn" style="display:none">Sign Out</button>
             </div>
         </div>
     </header>
 
     <main>
         <div class="container">
-            <div class="main-content">
-                <!-- Sidebar -->
+            <div id="auth-screen" class="auth-screen">
+                <h2>Welcome to Aasai SmartEDU</h2>
+                <p>Your AI-powered learning assistant for school students</p>
+                <p style="color: var(--primary); font-weight: 500;">Please sign in using the button in the top right corner</p>
+            </div>
+
+            <div id="main-content" class="main-content" style="display:none">
                 <div class="sidebar">
                     <div class="card">
-                        <h2 class="card-title">📚 Preferences</h2>
+                        <div class="card-title">⚙️ Preferences</div>
                         <div class="form-group">
-                            <label for="standard">Standard</label>
-                            <select id="standard">
-                                <option value="">Select Standard</option>
-                                <option value="6">6th Standard</option>
-                                <option value="7">7th Standard</option>
-                                <option value="8">8th Standard</option>
-                                <option value="9">9th Standard</option>
-                                <option value="10">10th Standard</option>
-                                <option value="11">11th Standard</option>
-                                <option value="12">12th Standard</option>
+                            <label>Standard / Class</label>
+                            <select id="standard-select" class="form-select">
+                                <option value="">Loading standards...</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="subject">Subject</label>
-                            <select id="subject">
-                                <option value="">Select Subject</option>
-                                <option value="Mathematics">Mathematics</option>
-                                <option value="Physics">Physics</option>
-                                <option value="Chemistry">Chemistry</option>
-                                <option value="Biology">Biology</option>
-                                <option value="Computer Science">Computer Science</option>
-                                <option value="English">English</option>
-                                <option value="Tamil">Tamil</option>
-                                <option value="History">History</option>
-                                <option value="Geography">Geography</option>
+                            <label>Subject</label>
+                            <select id="subject-select" class="form-select" disabled>
+                                <option value="">Select standard first</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="medium">Medium</label>
-                            <select id="medium">
-                                <option value="english">English</option>
-                                <option value="tamil">Tamil</option>
+                            <label>Language Medium</label>
+                            <select id="medium-select" class="form-select">
+                                <option value="">Loading mediums...</option>
                             </select>
                         </div>
                     </div>
 
-                    <div class="card">
-                        <h2 class="card-title">❓ Ask Question</h2>
-                        <div class="question-input-container">
-                            <textarea 
-                                id="questionInput" 
-                                class="question-input" 
-                                placeholder="Type your question here..."></textarea>
-                            <button id="voiceBtn" class="voice-btn" title="Voice input">
-                                🎤
-                            </button>
+                    <div class="search-card search-card-mobile">
+                        <div class="search-header">
+                            <h2>🔍 Ask Your Question</h2>
+                            <p>Type or speak your question</p>
                         </div>
-                        <button id="askBtn" class="ask-btn">Ask Question</button>
+
+                        <div class="language-select-wrapper">
+                            <label>🎤 Voice:</label>
+                            <select id="language-select-mobile" class="language-select">
+                                <option value="en-US">English</option>
+                                <option value="hi-IN">Hindi</option>
+                                <option value="ta-IN">Tamil</option>
+                                <option value="te-IN">Telugu</option>
+                                <option value="kn-IN">Kannada</option>
+                                <option value="ml-IN">Malayalam</option>
+                            </select>
+                        </div>
+
+                        <div id="voice-status-mobile" class="voice-status"></div>
+
+                        <div class="search-box">
+                            <input type="text" id="search-input-mobile" class="search-input" placeholder="Ask any question...">
+                            <button id="voice-btn-mobile" class="voice-btn" title="Click to start voice input">🎤</button>
+                            <button id="search-btn-mobile" class="search-btn">Search</button>
+                        </div>
+                    </div>
+
+                    <div id="results-card-mobile" class="results-card results-card-mobile">
+                        <div class="results-header">
+                            <h3>💡 Answer</h3>
+                        </div>
+                        <div id="results-content-mobile"></div>
+                    </div>
+
+                    <div class="card">
+                        <div class="history-header">
+                            <div class="card-title">📖 Recent</div>
+                            <button id="refresh-history" class="refresh-btn">🔄</button>
+                        </div>
+                        <div id="history-list" class="history-list">
+                            <div class="no-history">No history yet</div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Chat Area -->
-                <div class="chat-container">
-                    <div class="chat-header">
-                        <h2 class="chat-title">💬 AI Tutor</h2>
-                        <button id="clearChatBtn" class="clear-chat-btn">Clear Chat</button>
-                    </div>
-                    <div id="chatMessages" class="chat-messages">
-                        <div class="message">
-                            <div class="message-avatar">AI</div>
-                            <div class="message-content">
-                                <div class="message-bubble">
-                                    <div class="message-text">
-                                        Hello! I'm your AI tutor. Ask me any question about your subjects and I'll help you learn! 📚
-                                    </div>
-                                </div>
-                            </div>
+                <div class="content-area">
+                    <div class="search-card search-card-desktop">
+                        <div class="search-header">
+                            <h2>🔍 Ask Your Question</h2>
+                            <p>Type or speak your question</p>
                         </div>
+
+                        <div class="language-select-wrapper">
+                            <label>🎤 Voice:</label>
+                            <select id="language-select" class="language-select">
+                                <option value="en-US">English</option>
+                                <option value="hi-IN">Hindi</option>
+                                <option value="ta-IN">Tamil</option>
+                                <option value="te-IN">Telugu</option>
+                                <option value="kn-IN">Kannada</option>
+                                <option value="ml-IN">Malayalam</option>
+                            </select>
+                        </div>
+
+                        <div id="voice-status" class="voice-status"></div>
+
+                        <div class="search-box">
+                            <input type="text" id="search-input" class="search-input" placeholder="Ask any question...">
+                            <button id="voice-btn" class="voice-btn" title="Click to start voice input">🎤</button>
+                            <button id="search-btn" class="search-btn">Search</button>
+                        </div>
+                    </div>
+
+                    <div id="results-card" class="results-card results-card-desktop">
+                        <div class="results-header">
+                            <h3>💡 Answer</h3>
+                        </div>
+                        <div id="results-content"></div>
                     </div>
                 </div>
             </div>
         </div>
     </main>
 
+    <footer>
+        <div class="footer-content">
+            <div>&copy; 2025 Aasai SmartEDU</div>
+            <div class="footer-links">
+                <a href="#">Privacy</a>
+                <a href="#">Terms</a>
+                <a href="#">Contact</a>
+            </div>
+        </div>
+    </footer>
+
     <script>
-        // Configuration
         const CONFIG = {
+            CLIENT_ID: '37355855536-n1pdonbkg3lb3s6psq938jk81hgjnebe.apps.googleusercontent.com',
             API_URL: 'https://dnotflkcoj.execute-api.ap-southeast-2.amazonaws.com/prod'
         };
 
-        // State
         let state = {
             user: null,
             token: null,
-            schoolCode: null,
+            chatId: null,
+            answerText: '',
             preferences: { standard: '', subject: '', medium: 'english' },
             recognition: null,
-            isRecording: false
+            isRecording: false,
+            selectedLanguage: 'en-US',
+            currentVoiceTarget: 'desktop',
+            availableStandards: [],
+            availableSubjects: [],
+            availableMediums: [],
+            voiceSupported: false
         };
 
-        // Get auth headers
+        // Helper function to get auth headers with school context
         function getAuthHeaders() {
             return {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${state.token}`,
-                'X-School-ID': state.schoolCode
+                'X-School-ID': state.schoolCode || localStorage.getItem('schoolCode') || 'demo'
             };
         }
 
-        // Initialize
-        async function init() {
-            // Check auth
-            state.token = localStorage.getItem('sessionToken');
-            state.schoolCode = localStorage.getItem('schoolCode');
-            const userName = localStorage.getItem('userName');
-            const userEmail = localStorage.getItem('userEmail');
-            const userPicture = localStorage.getItem('userPicture');
+        document.addEventListener('DOMContentLoaded', init);
 
-            if (!state.token || !state.schoolCode) {
-                window.location.href = 'login.html';
-                return;
-            }
-
-            // Set user info
-            document.getElementById('userName').textContent = userName || 'Student';
-            document.getElementById('userAvatar').src = userPicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName || 'Student')}&background=4361ee&color=fff`;
-            document.getElementById('schoolName').textContent = localStorage.getItem('schoolName') || 'School Portal';
-
-            // Load preferences
-            loadPreferences();
-
-            // Setup event listeners
+        function init() {
+            initGoogleSignIn();
             setupEventListeners();
-
-            // Load user stats
-            loadUserStats();
+            initVoiceRecognition();
+            restoreSession();
         }
 
         function setupEventListeners() {
-            document.getElementById('askBtn').addEventListener('click', askQuestion);
-            document.getElementById('questionInput').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    askQuestion();
+            document.getElementById('sign-out-btn').addEventListener('click', signOut);
+            document.getElementById('search-btn').addEventListener('click', performSearch);
+            document.getElementById('search-btn-mobile').addEventListener('click', performSearch);
+            
+            document.getElementById('search-input').addEventListener('keypress', e => {
+                if (e.key === 'Enter') performSearch();
+            });
+            document.getElementById('search-input-mobile').addEventListener('keypress', e => {
+                if (e.key === 'Enter') performSearch();
+            });
+            
+            document.getElementById('voice-btn').addEventListener('click', () => toggleVoice(false));
+            document.getElementById('voice-btn-mobile').addEventListener('click', () => toggleVoice(true));
+            document.getElementById('refresh-history').addEventListener('click', loadHistory);
+            
+            document.getElementById('standard-select').addEventListener('change', async (e) => {
+                state.preferences.standard = e.target.value;
+                savePreferences();
+                
+                if (e.target.value) {
+                    await loadSubjects(e.target.value);
+                } else {
+                    const subjectSelect = document.getElementById('subject-select');
+                    subjectSelect.innerHTML = '<option value="">Select standard first</option>';
+                    subjectSelect.disabled = true;
+                    state.preferences.subject = '';
                 }
             });
-            document.getElementById('clearChatBtn').addEventListener('click', clearChat);
-            document.getElementById('signOutBtn').addEventListener('click', signOut);
-
-            // Preferences
-            document.getElementById('standard').addEventListener('change', savePreferences);
-            document.getElementById('subject').addEventListener('change', savePreferences);
-            document.getElementById('medium').addEventListener('change', savePreferences);
-
-            // Voice input
-            document.getElementById('voiceBtn').addEventListener('click', toggleVoiceInput);
-        }
-
-        function loadPreferences() {
-            const prefs = localStorage.getItem('preferences');
-            if (prefs) {
-                state.preferences = JSON.parse(prefs);
-                document.getElementById('standard').value = state.preferences.standard || '';
-                document.getElementById('subject').value = state.preferences.subject || '';
-                document.getElementById('medium').value = state.preferences.medium || 'english';
-            }
-        }
-
-        function savePreferences() {
-            state.preferences = {
-                standard: document.getElementById('standard').value,
-                subject: document.getElementById('subject').value,
-                medium: document.getElementById('medium').value
-            };
-            localStorage.setItem('preferences', JSON.stringify(state.preferences));
-        }
-
-        async function loadUserStats() {
-            try {
-                const response = await fetch(`${CONFIG.API_URL}/api/users/me`, {
-                    headers: getAuthHeaders()
-                });
-
-                if (response.ok) {
-                    const user = await response.json();
-                    document.getElementById('userStats').textContent = `Questions: ${user.searchCount || 0}`;
+            
+            document.getElementById('subject-select').addEventListener('change', e => {
+                state.preferences.subject = e.target.value;
+                savePreferences();
+            });
+            
+            document.getElementById('medium-select').addEventListener('change', e => {
+                state.preferences.medium = e.target.value;
+                savePreferences();
+            });
+            
+            document.getElementById('language-select').addEventListener('change', e => {
+                state.selectedLanguage = e.target.value;
+                document.getElementById('language-select-mobile').value = e.target.value;
+                if (state.recognition) {
+                    state.recognition.lang = e.target.value;
                 }
+            });
+            
+            document.getElementById('language-select-mobile').addEventListener('change', e => {
+                state.selectedLanguage = e.target.value;
+                document.getElementById('language-select').value = e.target.value;
+                if (state.recognition) {
+                    state.recognition.lang = e.target.value;
+                }
+            });
+        }
+
+        async function loadMetadata() {
+            console.log('📚 Loading metadata from database...');
+            
+            try {
+                await Promise.all([
+                    loadStandards(),
+                    loadMediums()
+                ]);
+                
+                console.log('✅ Metadata loaded successfully');
             } catch (error) {
-                console.error('Error loading stats:', error);
+                console.error('❌ Failed to load metadata:', error);
+                showNotification('Failed to load preferences data', 'error');
             }
         }
 
-        async function askQuestion() {
-            const input = document.getElementById('questionInput');
-            const question = input.value.trim();
-
-            if (!question) {
-                showNotification('Please enter a question', 'error');
-                return;
-            }
-
-            // Add user message
-            addMessage(question, 'user');
-            input.value = '';
-
-            // Show loading
-            const loadingId = addLoadingMessage();
-
+        async function loadStandards() {
             try {
-                const response = await fetch(`${CONFIG.API_URL}/rag`, {
-                    method: 'POST',
+                const response = await fetch(`${CONFIG.API_URL}/metadata/standards`, {
+                    method: 'GET',
                     headers: getAuthHeaders(),
-                    body: JSON.stringify({
-                        question: question,
-                        preferences: state.preferences
-                    })
+                       
+                    }
                 });
-
-                // Remove loading
-                removeMessage(loadingId);
 
                 if (!response.ok) {
-                    throw new Error('Failed to get answer');
+                    throw new Error('Failed to fetch standards');
                 }
 
                 const data = await response.json();
+                state.availableStandards = data.standards || [];
 
-                // Add AI response
-                addMessage(data.htmlContent || data.answer, 'ai', data.sources);
+                const standardSelect = document.getElementById('standard-select');
+                
+                if (state.availableStandards.length === 0) {
+                    standardSelect.innerHTML = '<option value="">No standards available</option>';
+                    return;
+                }
 
-                // Update stats
-                loadUserStats();
+                let optionsHTML = '<option value="">All Standards</option>';
+                state.availableStandards.forEach(standard => {
+                    optionsHTML += `<option value="${standard}">Class ${standard}</option>`;
+                });
 
+                standardSelect.innerHTML = optionsHTML;
+                
+                if (state.preferences.standard) {
+                    standardSelect.value = state.preferences.standard;
+                    await loadSubjects(state.preferences.standard);
+                }
+
+                console.log(`📚 Loaded ${state.availableStandards.length} standards:`, state.availableStandards);
             } catch (error) {
-                removeMessage(loadingId);
-                console.error('Error asking question:', error);
-                addMessage('Sorry, I encountered an error. Please try again.', 'ai');
-                showNotification('Failed to get answer', 'error');
+                console.error('❌ Error loading standards:', error);
+                const standardSelect = document.getElementById('standard-select');
+                standardSelect.innerHTML = '<option value="">Error loading standards</option>';
             }
         }
 
-        function addMessage(content, type, sources = null) {
-            const messagesDiv = document.getElementById('chatMessages');
-            const messageId = 'msg-' + Date.now();
+        async function loadSubjects(standard) {
+            const subjectSelect = document.getElementById('subject-select');
+            
+            try {
+                subjectSelect.innerHTML = '<option value="">Loading subjects...</option>';
+                subjectSelect.disabled = true;
 
-            const messageHTML = `
-                <div class="message ${type}" id="${messageId}">
-                    <div class="message-avatar">${type === 'user' ? 'You' : 'AI'}</div>
-                    <div class="message-content">
-                        <div class="message-bubble">
-                            <div class="message-text">${content}</div>
-                            ${sources && sources.length ? `
-                                <div class="sources">
-                                    <div class="sources-title">📚 Sources:</div>
-                                    ${sources.map(s => `<div class="source-item">• ${s.metadata?.title || s.metadata?.documentName || 'Source'}</div>`).join('')}
-                                </div>
-                            ` : ''}
-                        </div>
-                        <div class="message-meta">${new Date().toLocaleTimeString()}</div>
-                    </div>
-                </div>
-            `;
+                const url = standard ? 
+                    `${CONFIG.API_URL}/metadata/subjects?standard=${encodeURIComponent(standard)}` :
+                    `${CONFIG.API_URL}/metadata/subjects`;
 
-            messagesDiv.insertAdjacentHTML('beforeend', messageHTML);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: getAuthHeaders(),
+                       
+                    }
+                });
 
-            // Render MathJax
-            if (window.MathJax) {
-                MathJax.typesetPromise([document.getElementById(messageId)]);
-            }
+                if (!response.ok) {
+                    throw new Error('Failed to fetch subjects');
+                }
 
-            return messageId;
-        }
+                const data = await response.json();
+                state.availableSubjects = data.subjects || [];
 
-        function addLoadingMessage() {
-            const messagesDiv = document.getElementById('chatMessages');
-            const loadingId = 'loading-' + Date.now();
+                if (state.availableSubjects.length === 0) {
+                    subjectSelect.innerHTML = '<option value="">No subjects found</option>';
+                    subjectSelect.disabled = false;
+                    return;
+                }
 
-            const loadingHTML = `
-                <div class="message ai" id="${loadingId}">
-                    <div class="message-avatar">AI</div>
-                    <div class="message-content">
-                        <div class="message-bubble">
-                            <div class="loading">
-                                <div class="loading-dot"></div>
-                                <div class="loading-dot"></div>
-                                <div class="loading-dot"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
+                let optionsHTML = '<option value="">All Subjects</option>';
+                state.availableSubjects.forEach(subject => {
+                    const formattedSubject = subject
+                        .replace(/_/g, ' ')
+                        .replace(/\b\w/g, l => l.toUpperCase());
+                    
+                    optionsHTML += `<option value="${subject}">${formattedSubject}</option>`;
+                });
 
-            messagesDiv.insertAdjacentHTML('beforeend', loadingHTML);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                subjectSelect.innerHTML = optionsHTML;
+                subjectSelect.disabled = false;
 
-            return loadingId;
-        }
+                if (state.preferences.subject) {
+                    subjectSelect.value = state.preferences.subject;
+                }
 
-        function removeMessage(messageId) {
-            const message = document.getElementById(messageId);
-            if (message) {
-                message.remove();
+                console.log(`📖 Loaded ${state.availableSubjects.length} subjects for standard ${standard}:`, state.availableSubjects);
+            } catch (error) {
+                console.error('❌ Error loading subjects:', error);
+                subjectSelect.innerHTML = '<option value="">Error loading subjects</option>';
+                subjectSelect.disabled = false;
             }
         }
 
-        function clearChat() {
-            const messagesDiv = document.getElementById('chatMessages');
-            messagesDiv.innerHTML = `
-                <div class="message">
-                    <div class="message-avatar">AI</div>
-                    <div class="message-content">
-                        <div class="message-bubble">
-                            <div class="message-text">
-                                Hello! I'm your AI tutor. Ask me any question about your subjects and I'll help you learn! 📚
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
+        async function loadMediums() {
+            try {
+                const response = await fetch(`${CONFIG.API_URL}/metadata/mediums`, {
+                    method: 'GET',
+                    headers: getAuthHeaders(),
+                       
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch mediums');
+                }
+
+                const data = await response.json();
+                state.availableMediums = data.mediums || [];
+
+                const mediumSelect = document.getElementById('medium-select');
+                
+                if (state.availableMediums.length === 0) {
+                    mediumSelect.innerHTML = '<option value="english">English</option>';
+                    return;
+                }
+
+                let optionsHTML = '';
+                state.availableMediums.forEach(medium => {
+                    const formattedMedium = medium.charAt(0).toUpperCase() + medium.slice(1);
+                    optionsHTML += `<option value="${medium}">${formattedMedium}</option>`;
+                });
+
+                mediumSelect.innerHTML = optionsHTML;
+
+                if (state.preferences.medium && state.availableMediums.includes(state.preferences.medium)) {
+                    mediumSelect.value = state.preferences.medium;
+                } else if (state.availableMediums.length > 0) {
+                    mediumSelect.value = state.availableMediums[0];
+                    state.preferences.medium = state.availableMediums[0];
+                }
+
+                console.log(`🌐 Loaded ${state.availableMediums.length} mediums:`, state.availableMediums);
+            } catch (error) {
+                console.error('❌ Error loading mediums:', error);
+                const mediumSelect = document.getElementById('medium-select');
+                mediumSelect.innerHTML = '<option value="english">English</option>';
+            }
         }
 
-        function toggleVoiceInput() {
-            if (!('webkitSpeechRecognition' in window)) {
-                showNotification('Voice input not supported in this browser', 'error');
+        function initGoogleSignIn() {
+            if (typeof google === 'undefined') {
+                setTimeout(initGoogleSignIn, 100);
+                return;
+            }
+            
+            google.accounts.id.initialize({
+                client_id: CONFIG.CLIENT_ID,
+                callback: handleSignIn
+            });
+
+            google.accounts.id.renderButton(
+                document.getElementById('google-signin-button'),
+                { theme: 'outline', size: 'large' }
+            );
+        }
+
+        async function handleSignIn(response) {
+            try {
+                showNotification('Signing in...', 'info');
+                const userInfo = parseJwt(response.credential);
+                
+                const authResponse = await fetch(`${CONFIG.API_URL}/auth/google`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                        'Content-Type': 'application/json',
+                       
+                    },
+                    body: JSON.stringify({ 
+                        googleUserData: {
+                            id: userInfo.sub,
+                            email: userInfo.email,
+                            name: userInfo.name,
+                            picture: userInfo.picture
+                        }
+                    })
+                });
+
+                const data = await authResponse.json();
+                state.user = data.user;
+                state.token = data.sessionToken;
+                
+                saveSession();
+                showUserProfile();
+                showMainContent();
+                
+                await loadMetadata();
+                
+                loadHistory();
+                loadPreferences();
+                
+                showNotification(`Welcome ${state.user.name}!`, 'success');
+            } catch (error) {
+                console.error('Sign in error:', error);
+                showNotification('Failed to sign in', 'error');
+            }
+        }
+
+        function parseJwt(token) {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => 
+                '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+            ).join(''));
+            return JSON.parse(jsonPayload);
+        }
+
+        function saveSession() {
+            const sessionData = {
+                user: state.user,
+                token: state.token
+            };
+            sessionStorage.setItem('aasai_session', JSON.stringify(sessionData));
+        }
+
+        async function restoreSession() {
+            const sessionToken = localStorage.getItem('sessionToken');
+            const schoolCode = localStorage.getItem('schoolCode');
+            const userName = localStorage.getItem('userName');
+            const userEmail = localStorage.getItem('userEmail');
+            const userPicture = localStorage.getItem('userPicture');
+            const userId = localStorage.getItem('userId');
+            
+            if (sessionToken && schoolCode) {
+                state.token = sessionToken;
+                state.schoolCode = schoolCode;
+                state.user = { name: userName, email: userEmail, picture: userPicture, id: userId };
+                showUserProfile();
+                showMainContent();
+                await loadMetadata();
+                loadHistory();
+                loadPreferences();
+                return;
+            }
+            window.location.href = 'login.html';
+            return;
+            
+            const savedSession = sessionStorage.getItem('aasai_session');
+            
+            if (savedSession) {
+                const sessionData = JSON.parse(savedSession);
+                state.user = sessionData.user;
+                state.token = sessionData.token;
+                showUserProfile();
+                showMainContent();
+                
+                await loadMetadata();
+                
+                loadHistory();
+                loadPreferences();
+            }
+        }
+
+        async function signOut() {
+            try {
+                if (state.token) {
+                    await fetch(`${CONFIG.API_URL}/auth/logout`, {
+                        method: 'POST',
+                        headers: getAuthHeaders(),
+                            'Authorization': `Bearer ${state.token}`,
+                           
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Sign out error:', error);
+            }
+            
+            state.user = null;
+            state.token = null;
+            localStorage.clear(); sessionStorage.removeItem('aasai_session');
+            window.location.href = 'login.html';
+            
+            document.getElementById('user-profile').classList.remove('active');
+            document.getElementById('sign-out-btn').style.display = 'none';
+            document.getElementById('google-signin-button').style.display = 'block';
+            document.getElementById('auth-screen').style.display = 'block';
+            document.getElementById('main-content').style.display = 'none';
+            
+            showNotification('Signed out', 'success');
+        }
+
+        function showUserProfile() {
+            document.getElementById('user-avatar').src = state.user.picture;
+            document.getElementById('user-name').textContent = state.user.name;
+            document.getElementById('search-count').textContent = state.user.searchCount || 0;
+            document.getElementById('user-profile').classList.add('active');
+            document.getElementById('sign-out-btn').style.display = 'block';
+            document.getElementById('google-signin-button').style.display = 'none';
+        }
+
+        function showMainContent() {
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('main-content').style.display = 'grid';
+        }
+
+        function savePreferences() {
+            if (state.user) {
+                const prefsKey = `prefs_${state.user.id}`;
+                
+                state.preferences = {
+                    standard: document.getElementById('standard-select').value || null,
+                    subject: document.getElementById('subject-select').value || null,
+                    medium: document.getElementById('medium-select').value || null
+                };
+                
+                sessionStorage.setItem(prefsKey, JSON.stringify(state.preferences));
+                
+                const standardText = state.preferences.standard ? `Class ${state.preferences.standard}` : 'All';
+                const subjectText = state.preferences.subject ? 
+                    state.preferences.subject.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'All';
+                
+                showNotification(`Preferences saved: ${standardText}, ${subjectText}`, 'success', 2000);
+            }
+        }
+
+        function loadPreferences() {
+            if (state.user) {
+                const prefsKey = `prefs_${state.user.id}`;
+                const saved = sessionStorage.getItem(prefsKey);
+                if (saved) {
+                    state.preferences = JSON.parse(saved);
+                    
+                    if (state.preferences.standard) {
+                        document.getElementById('standard-select').value = state.preferences.standard;
+                    }
+                    
+                    if (state.preferences.subject) {
+                        setTimeout(() => {
+                            document.getElementById('subject-select').value = state.preferences.subject || '';
+                        }, 500);
+                    }
+                    
+                    if (state.preferences.medium) {
+                        document.getElementById('medium-select').value = state.preferences.medium;
+                    }
+                }
+            }
+        }
+
+        // FIXED VOICE RECOGNITION
+        function initVoiceRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            
+            if (!SpeechRecognition) {
+                console.warn('⚠️ Speech recognition not supported in this browser');
+                state.voiceSupported = false;
+                
+                // Disable voice buttons and show tooltip
+                const voiceBtnDesktop = document.getElementById('voice-btn');
+                const voiceBtnMobile = document.getElementById('voice-btn-mobile');
+                
+                voiceBtnDesktop.disabled = true;
+                voiceBtnMobile.disabled = true;
+                voiceBtnDesktop.title = 'Voice input not supported in this browser';
+                voiceBtnMobile.title = 'Voice input not supported in this browser';
+                voiceBtnDesktop.style.opacity = '0.5';
+                voiceBtnMobile.style.opacity = '0.5';
+                
+                return;
+            }
+            
+            state.voiceSupported = true;
+            console.log('✅ Speech recognition is supported');
+            
+            try {
+                state.recognition = new SpeechRecognition();
+                state.recognition.continuous = true;  // Changed from false to true for continuous recording
+                state.recognition.interimResults = true;
+                state.recognition.lang = state.selectedLanguage;
+                state.recognition.maxAlternatives = 1;
+                
+                state.recognition.onstart = () => {
+                    console.log('🎤 Voice recognition started');
+                    state.isRecording = true;
+                    updateVoiceUI(true);
+                };
+                
+                state.recognition.onresult = (event) => {
+                    console.log('📝 Voice result received');
+                    let transcript = '';
+                    let isFinal = false;
+                    
+                    // Collect all results
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        transcript += event.results[i][0].transcript;
+                        if (event.results[i].isFinal) {
+                            isFinal = true;
+                        }
+                    }
+                    
+                    // Update input field
+                    const input = state.currentVoiceTarget === 'mobile' ?
+                        document.getElementById('search-input-mobile') : 
+                        document.getElementById('search-input');
+                    
+                    input.value = transcript;
+                    
+                    // Update status display
+                    const voiceStatus = state.currentVoiceTarget === 'mobile' ?
+                        document.getElementById('voice-status-mobile') : 
+                        document.getElementById('voice-status');
+                    
+                    if (isFinal) {
+                        voiceStatus.textContent = `✅ Captured: "${transcript}"`;
+                        voiceStatus.className = 'voice-status success show';
+                        console.log('✅ Final transcript:', transcript);
+                    } else {
+                        voiceStatus.textContent = `🎤 Listening: "${transcript}"`;
+                        voiceStatus.className = 'voice-status listening show';
+                    }
+                };
+                
+                state.recognition.onerror = (event) => {
+                    console.error('❌ Speech recognition error:', event.error);
+                    
+                    // Don't stop recording for "no-speech" error in continuous mode
+                    if (event.error === 'no-speech' && state.recognition.continuous) {
+                        console.log('No speech detected, continuing to listen...');
+                        return;
+                    }
+                    
+                    state.isRecording = false;
+                    updateVoiceUI(false);
+                    
+                    const voiceStatus = state.currentVoiceTarget === 'mobile' ?
+                        document.getElementById('voice-status-mobile') : 
+                        document.getElementById('voice-status');
+                    
+                    let errorMessage = 'Voice input error';
+                    
+                    switch(event.error) {
+                        case 'no-speech':
+                            errorMessage = 'No speech detected. Click mic to try again.';
+                            break;
+                        case 'audio-capture':
+                            errorMessage = 'Microphone not found. Please check your device.';
+                            break;
+                        case 'not-allowed':
+                            errorMessage = 'Microphone permission denied. Please allow access.';
+                            showNotification('Please allow microphone access in your browser settings', 'error', 4000);
+                            break;
+                        case 'network':
+                            errorMessage = 'Network error. Please check your connection.';
+                            break;
+                        case 'aborted':
+                            errorMessage = 'Voice input stopped';
+                            break;
+                        default:
+                            errorMessage = `Voice error: ${event.error}`;
+                    }
+                    
+                    voiceStatus.textContent = errorMessage;
+                    voiceStatus.className = 'voice-status error show';
+                    
+                    setTimeout(() => {
+                        voiceStatus.classList.remove('show');
+                    }, 3000);
+                };
+                
+                state.recognition.onend = () => {
+                    console.log('🛑 Voice recognition ended');
+                    
+                    // Only update UI if we're not intentionally stopping
+                    if (state.isRecording) {
+                        console.log('Recognition ended unexpectedly, restarting...');
+                        // Auto-restart if it ended unexpectedly during continuous mode
+                        try {
+                            state.recognition.start();
+                        } catch (e) {
+                            console.error('Failed to restart:', e);
+                            state.isRecording = false;
+                            updateVoiceUI(false);
+                        }
+                    } else {
+                        updateVoiceUI(false);
+                        
+                        setTimeout(() => {
+                            const voiceStatus = state.currentVoiceTarget === 'mobile' ?
+                                document.getElementById('voice-status-mobile') : 
+                                document.getElementById('voice-status');
+                            voiceStatus.classList.remove('show');
+                        }, 3000);
+                    }
+                };
+                
+                console.log('✅ Voice recognition initialized successfully');
+                
+            } catch (error) {
+                console.error('❌ Failed to initialize voice recognition:', error);
+                state.voiceSupported = false;
+                showNotification('Voice input initialization failed', 'error');
+            }
+        }
+
+        function updateVoiceUI(isRecording) {
+            const voiceBtn = state.currentVoiceTarget === 'mobile' ? 
+                document.getElementById('voice-btn-mobile') : 
+                document.getElementById('voice-btn');
+            
+            const voiceStatus = state.currentVoiceTarget === 'mobile' ?
+                document.getElementById('voice-status-mobile') : 
+                document.getElementById('voice-status');
+            
+            if (isRecording) {
+                voiceBtn.classList.add('recording');
+                voiceBtn.textContent = '⏹️';  // Stop icon when recording
+                voiceBtn.title = 'Click to stop recording';
+                voiceStatus.textContent = '🎤 Listening continuously... Click mic to stop';
+                voiceStatus.className = 'voice-status listening show';
+            } else {
+                voiceBtn.classList.remove('recording');
+                voiceBtn.textContent = '🎤';  // Mic icon when not recording
+                voiceBtn.title = 'Click to start voice input';
+            }
+        }
+
+        function toggleVoice(isMobile) {
+            console.log('🎤 Voice button clicked. Mobile:', isMobile, 'Recording:', state.isRecording);
+            
+            if (!state.voiceSupported) {
+                showNotification('Voice input is not supported in this browser. Please use Chrome, Edge, or Safari.', 'error', 4000);
+                return;
+            }
+            
+            if (!state.recognition) {
+                console.error('❌ Recognition object not initialized');
+                showNotification('Voice input not available', 'error');
+                return;
+            }
+            
+            state.currentVoiceTarget = isMobile ? 'mobile' : 'desktop';
+            
+            if (state.isRecording) {
+                // Stop recording
+                console.log('🛑 Stopping voice recognition');
+                state.isRecording = false;  // Set flag first to prevent auto-restart
+                try {
+                    state.recognition.stop();
+                    updateVoiceUI(false);
+                    showNotification('Voice input stopped', 'info', 2000);
+                } catch (error) {
+                    console.error('Error stopping recognition:', error);
+                }
+            } else {
+                // Start recording
+                console.log('▶️ Starting continuous voice recognition with language:', state.selectedLanguage);
+                try {
+                    state.recognition.lang = state.selectedLanguage;
+                    state.recognition.start();
+                    console.log('✅ Recognition started successfully');
+                    showNotification('Voice input started - Speak continuously', 'success', 2000);
+                } catch (error) {
+                    console.error('❌ Error starting recognition:', error);
+                    
+                    if (error.message && error.message.includes('already started')) {
+                        state.recognition.stop();
+                        setTimeout(() => {
+                            try {
+                                state.recognition.start();
+                            } catch (e) {
+                                showNotification('Could not start voice input. Please try again.', 'error');
+                            }
+                        }, 100);
+                    } else {
+                        showNotification('Could not start voice input. Please ensure microphone access is allowed.', 'error', 4000);
+                    }
+                }
+            }
+        }
+
+        async function performSearch() {
+            if (!state.user) {
+                showNotification('Please sign in first', 'error');
+                return;
+            }
+            
+            const desktopInput = document.getElementById('search-input').value.trim();
+            const mobileInput = document.getElementById('search-input-mobile').value.trim();
+            const question = desktopInput || mobileInput;
+            
+            if (!question) {
+                showNotification('Please enter a question', 'warning');
                 return;
             }
 
+            // Stop voice input if it's recording
             if (state.isRecording) {
-                stopVoiceInput();
+                state.isRecording = false;
+                if (state.recognition) {
+                    try {
+                        state.recognition.stop();
+                    } catch (e) {
+                        console.error('Error stopping recognition:', e);
+                    }
+                }
+            }
+            
+            const currentPreferences = {
+                standard: document.getElementById('standard-select').value || null,
+                subject: document.getElementById('subject-select').value || null,
+                medium: document.getElementById('medium-select').value || null
+            };
+            
+            state.preferences = currentPreferences;
+            
+            if (!currentPreferences.standard && !currentPreferences.subject) {
+                const proceed = confirm('No standard or subject selected. This will search ALL documents. Continue?');
+                if (!proceed) return;
+            }
+            
+            const isMobile = window.innerWidth <= 968;
+            const resultsCard = isMobile ? document.getElementById('results-card-mobile') : document.getElementById('results-card');
+            const resultsContent = isMobile ? document.getElementById('results-content-mobile') : document.getElementById('results-content');
+            const searchBtn = isMobile ? document.getElementById('search-btn-mobile') : document.getElementById('search-btn');
+            
+            resultsCard.classList.add('show');
+            resultsContent.innerHTML = '<div class="loading"><div class="spinner"></div><p style="margin-top: 1rem; color: var(--gray);">Searching with your preferences...</p></div>';
+            searchBtn.disabled = true;
+            searchBtn.textContent = 'Searching...';
+            
+            const startTime = Date.now();
+            
+            try {
+                const requestBody = {
+                    question: question,
+                    limit: 5,
+                    threshold: 0.5,
+                    preferences: {
+                        standard: currentPreferences.standard || null,
+                        subject: currentPreferences.subject || null,
+                        medium: currentPreferences.medium || null
+                    }
+                };
+                
+                console.log('🔍 Sending search request:', requestBody);
+                
+                const response = await fetch(`${CONFIG.API_URL}/rag`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${state.token}`,
+                       
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Search failed');
+                }
+                
+                const data = await response.json();
+                const responseTime = ((Date.now() - startTime) / 1000).toFixed(2);
+                
+                console.log('✅ Search response:', data);
+                console.log("🔍 DEBUG - Response Keys:", Object.keys(data));
+                console.log("🔍 DEBUG - Has sourceContexts?", !!data.sourceContexts);
+                if (data.sourceContexts) console.log("🔍 DEBUG - sourceContexts length:", data.sourceContexts.length);
+                if (data.sourceContexts && data.sourceContexts[0]) {
+                    console.log("🔍 DEBUG - First source sample:", data.sourceContexts[0]);
+                }
+                
+                state.chatId = data.chatId;
+                state.answerText = data.answer;
+                
+                displayResults(data, question, responseTime, currentPreferences);
+                
+                if (state.user) {
+                    state.user.searchCount = (state.user.searchCount || 0) + 1;
+                    document.getElementById('search-count').textContent = state.user.searchCount;
+                    saveSession();
+                }
+                
+                loadHistory();
+                document.getElementById('search-input').value = '';
+                document.getElementById('search-input-mobile').value = '';
+                
+                setTimeout(() => {
+                    resultsCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 100);
+                
+            } catch (error) {
+                console.error('Search error:', error);
+                resultsContent.innerHTML = `<div class="no-history">Search failed: ${error.message}<br>Please try again.</div>`;
+                showNotification('Search failed: ' + error.message, 'error');
+            } finally {
+                searchBtn.disabled = false;
+                searchBtn.textContent = 'Search';
+            }
+        }
+
+// FIXED displayResults function for Router-based RAG responses
+function displayResults(data, question, responseTime, appliedPreferences) {
+    console.log("🔍 DEBUG - Full Response Data:", JSON.stringify(data, null, 2));
+    const isMobile = window.innerWidth <= 968;
+    const resultsContent = isMobile ? document.getElementById('results-content-mobile') : document.getElementById('results-content');
+    
+    // Check if we have any content to display
+    if (!data.htmlContent && !data.answer && !data.aiExplanation) {
+        resultsContent.innerHTML = `
+            <div class="no-history">
+                <p>No information found with current preferences.</p>
+                <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--gray);">
+                    Try: <br>
+                    • Changing your standard or subject<br>
+                    • Using different keywords<br>
+                    • Removing some filters
+                </p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Determine confidence badge
+    let confidenceClass = 'badge-low';
+    let confidenceText = 'Low';
+    if (data.confidence >= 0.8) {
+        confidenceClass = 'badge-high';
+        confidenceText = 'High';
+    } else if (data.confidence >= 0.5) {
+        confidenceClass = 'badge-medium';
+        confidenceText = 'Medium';
+    }
+    
+    // Format preference labels
+    const standardLabel = appliedPreferences.standard ? `Class ${appliedPreferences.standard}` : 'All Standards';
+    const subjectLabel = appliedPreferences.subject ? 
+        appliedPreferences.subject.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 
+        'All Subjects';
+    const mediumLabel = appliedPreferences.medium ? 
+        appliedPreferences.medium.charAt(0).toUpperCase() + appliedPreferences.medium.slice(1) : 
+        'English';
+    
+    // Start building the result HTML
+    let resultHTML = `
+        <div class="result-item">
+            <div class="result-question-box">
+                <div class="result-question-label">Your Question</div>
+                <div class="result-question-text">${escapeHtml(question)}</div>
+            </div>
+            
+            <div class="result-meta">
+                <span class="badge ${confidenceClass}">Confidence: ${confidenceText} ${data.confidence ? `(${(data.confidence * 100).toFixed(1)}%)` : ''}</span>
+                <span class="badge">⏱️ ${responseTime}s</span>
+                ${data.cached ? '<span class="badge badge-high">⚡ Cached</span>' : ''}
+                ${data.modelUsed ? `<span class="badge">🤖 ${data.modelUsed}</span>` : ''}
+                ${data.templateName ? `<span class="badge">📋 ${data.templateName}</span>` : ''}
+            </div>
+            
+            <div style="background: linear-gradient(135deg, #e0e7ff 0%, #ddd6fe 100%); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                <div style="font-weight: 600; color: var(--primary); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>🎯</span>
+                    <span>Filters Applied:</span>
+                </div>
+                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                    <span class="badge" style="background: white; color: var(--dark); border: 2px solid var(--primary);">
+                        📚 ${standardLabel}
+                    </span>
+                    <span class="badge" style="background: white; color: var(--dark); border: 2px solid var(--primary);">
+                        📖 ${subjectLabel}
+                    </span>
+                    <span class="badge" style="background: white; color: var(--dark); border: 2px solid var(--primary);">
+                        🌐 ${mediumLabel}
+                    </span>
+                </div>
+            </div>
+    `;
+
+    // ============================================================================
+    // MAIN ANSWER CONTENT - Router-based (htmlContent) or Legacy (answer/explanation)
+    // ============================================================================
+    
+    if (data.htmlContent) {
+        // ROUTER MODE: Display the pre-formatted HTML content from templates
+        console.log("✅ Displaying htmlContent from router");
+        resultHTML += `
+            <div class="answer-section ai-explanation-section">
+                <div class="answer-section-header">
+                    💡 AI Answer (${data.templateName || 'Template-based'})
+                </div>
+                <div class="answer-section-content">
+                    <div class="answer-content">
+                        ${data.htmlContent}
+                    </div>
+                </div>
+            </div>
+        `;
+    } else {
+        // LEGACY MODE: Display originalDefinition and/or aiExplanation
+        console.log("⚠️ No htmlContent, using legacy format");
+        
+        if (data.originalDefinition) {
+            const formattedOriginal = formatMarkdown(data.originalDefinition);
+            resultHTML += `
+                <div class="answer-section original-definition-section">
+                    <div class="answer-section-header">
+                        📚 Original Explanation (From Textbook)
+                    </div>
+                    <div class="answer-section-content">
+                        <div class="answer-content">${formattedOriginal}</div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        if (data.aiExplanation) {
+            const formattedAI = formatMarkdown(data.aiExplanation);
+            resultHTML += `
+                <div class="answer-section ai-explanation-section">
+                    <div class="answer-section-header">
+                        🤖 AI Explanation (In Simple Words)
+                    </div>
+                    <div class="answer-section-content">
+                        <div class="answer-content">${formattedAI}</div>
+                    </div>
+                </div>
+            `;
+        } else if (data.answer && !data.originalDefinition) {
+            const formattedAnswer = formatMarkdown(data.answer);
+            resultHTML += `
+                <div class="answer-section ai-explanation-section">
+                    <div class="answer-section-header">
+                        💡 Answer
+                    </div>
+                    <div class="answer-section-content">
+                        <div class="answer-content">${formattedAnswer}</div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+    
+    // ============================================================================
+    // EXPANDABLE SOURCES SECTION WITH IMAGE DISPLAY
+    // ============================================================================
+    
+    if (data.sources && data.sources.length > 0) {
+        console.log("✅ Found sources:", data.sources.length, "sources");
+        console.log("🔍 First source sample:", data.sources[0]);
+        
+        resultHTML += `
+            <div class="source-contexts-section">
+                <div class="source-contexts-header">
+                    📚 Reference Sources (${data.sources.length})
+                </div>
+        `;
+        
+        data.sources.forEach((source, index) => {
+            console.log(`📖 Source ${index + 1}:`, source);
+            
+            const fs = source.metadata || {};
+            const pageNum = source.page_number || source.page || fs.page || 'N/A';
+            const sourceStandard = fs.standard || 'N/A';
+            const sourceSubject = fs.subject || 'N/A';
+            const sourceMedium = fs.language || 'English';
+            const sourceText = source.text || source.content || '';
+            const blobUrl = source.provenance?.blob_url || source.blob_url || '';
+            
+            console.log(`📄 Source ${index + 1} details:`, {
+                page: pageNum,
+                standard: sourceStandard,
+                subject: sourceSubject,
+                textLength: sourceText.length,
+                hasImage: !!blobUrl
+            });
+            
+            resultHTML += `
+                <div class="source-item" id="source-${index}">
+                    <div class="source-header" onclick="toggleSource(${index})">
+                        <div class="source-header-content">
+                            <div class="source-number">${index + 1}</div>
+                            <div class="source-tags">
+                                <span class="source-tag page">📄 Page ${escapeHtml(String(pageNum))}</span>
+                                <span class="source-tag grade">🎓 Class ${escapeHtml(String(sourceStandard))}</span>
+                                <span class="source-tag subject">📖 ${escapeHtml(String(sourceSubject))}</span>
+                            </div>
+                        </div>
+                        <div class="expand-icon">▼</div>
+                    </div>
+                    <div class="source-content">
+                        <div class="source-text-container">
+                            <div class="source-text-label">📄 Source Page Image</div>
+            `;
+            
+            if (blobUrl) {
+                resultHTML += `
+                            <div class="source-image-container">
+                                <img src="${escapeHtml(blobUrl)}" 
+                                     alt="Page ${escapeHtml(String(pageNum))}" 
+                                     class="source-image"
+                                     onclick="window.open('${escapeHtml(blobUrl)}', '_blank')"
+                                     onerror="this.parentElement.innerHTML='<div class=\\'source-image-error\\'>❌ Failed to load image</div>'"
+                                     loading="lazy">
+                            </div>
+                `;
             } else {
-                startVoiceInput();
+                resultHTML += `
+                            <div class="source-image-error">
+                                ⚠️ No image available for this source
+                            </div>
+                `;
             }
-        }
-
-        function startVoiceInput() {
-            const recognition = new webkitSpeechRecognition();
-            recognition.lang = state.preferences.medium === 'tamil' ? 'ta-IN' : 'en-US';
-            recognition.continuous = false;
-            recognition.interimResults = false;
-
-            recognition.onstart = () => {
-                state.isRecording = true;
-                document.getElementById('voiceBtn').classList.add('recording');
-                showNotification('Listening...', 'info');
-            };
-
-            recognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
-                document.getElementById('questionInput').value = transcript;
-            };
-
-            recognition.onerror = (event) => {
-                console.error('Voice input error:', event.error);
-                showNotification('Voice input failed', 'error');
-                stopVoiceInput();
-            };
-
-            recognition.onend = () => {
-                stopVoiceInput();
-            };
-
-            state.recognition = recognition;
-            recognition.start();
-        }
-
-        function stopVoiceInput() {
-            if (state.recognition) {
-                state.recognition.stop();
+            
+            // Optionally show text excerpt if available
+            if (sourceText && sourceText.length > 0) {
+                const truncatedText = sourceText.length > 500 ? 
+                    sourceText.substring(0, 500) + '...' : 
+                    sourceText;
+                
+                resultHTML += `
+                            <div class="source-text-label" style="margin-top: 1rem;">📝 Text Excerpt</div>
+                            <div class="source-full-text">
+                                ${escapeHtml(truncatedText)}
+                            </div>
+                `;
             }
-            state.isRecording = false;
-            document.getElementById('voiceBtn').classList.remove('recording');
-        }
-
-        function showNotification(message, type = 'info') {
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            notification.textContent = message;
-
-            document.body.appendChild(notification);
-
+            
+            resultHTML += `
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        resultHTML += `</div>`;
+    } else {
+        console.log("❌ No sources found in response");
+    }
+    
+    // ============================================================================
+    // RELATED TOPICS
+    // ============================================================================
+    
+    if (data.relatedTopics && data.relatedTopics.length > 0) {
+        resultHTML += `
+            <div class="related-topics-section">
+                <div class="related-topics-header">
+                    🔗 Explore Related Topics
+                </div>
+                <div class="related-topics-grid">
+        `;
+        
+        data.relatedTopics.forEach(topic => {
+            resultHTML += `
+                <button class="related-topic-btn" onclick="searchRelatedTopic('${escapeHtml(topic).replace(/'/g, "\\'")}')">
+                    <span>➜</span>
+                    <span>${escapeHtml(topic)}</span>
+                </button>
+            `;
+        });
+        
+        resultHTML += `
+                </div>
+            </div>
+        `;
+    }
+    
+    // ============================================================================
+    // ACTION BUTTONS
+    // ============================================================================
+    
+    resultHTML += `
+            <div class="result-actions">
+                <button class="btn btn-primary" onclick="copyAnswer()">📋 Copy Answer</button>
+                <button class="btn" id="like-btn" onclick="submitFeedback('like')">👍 Like</button>
+                <button class="btn" id="dislike-btn" onclick="submitFeedback('dislike')">👎 Dislike</button>
+                <button class="btn" id="report-btn" onclick="submitFeedback('report')">🚩 Report</button>
+            </div>
+        </div>
+    `;
+    
+    // Set the HTML and render math
+    resultsContent.innerHTML = resultHTML;
+    renderMath();
+}
+        function searchRelatedTopic(topic) {
+            const isMobile = window.innerWidth <= 968;
+            if (isMobile) {
+                document.getElementById('search-input-mobile').value = topic;
+            } else {
+                document.getElementById('search-input').value = topic;
+            }
+            
+            showNotification(`Searching for: ${topic}`, 'info', 2000);
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
             setTimeout(() => {
-                notification.remove();
-            }, 3000);
+                performSearch();
+            }, 500);
         }
 
-        function signOut() {
-            localStorage.clear();
-            window.location.href = 'login.html';
+        function toggleSource(index) {
+            const sourceItem = document.getElementById(`source-${index}`);
+            if (sourceItem) {
+                sourceItem.classList.toggle('expanded');
+            }
         }
 
-        // Initialize on load
-        window.addEventListener('DOMContentLoaded', init);
+        function formatMarkdown(text) {
+            let html = text;
+            
+            html = html.replace(/\\\[([\s\S]*?)\\\]/g, '<div class="math-display">\\[$1\\]</div>');
+            
+            html = html.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
+            html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+            html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+            html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+            
+            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+            
+            const lines = html.split('\n');
+            let inList = false;
+            const processed = [];
+            
+            for (let line of lines) {
+                if (line.match(/^[\s]*[-*]\s+/)) {
+                    if (!inList) {
+                        processed.push('<ul>');
+                        inList = true;
+                    }
+                    processed.push('<li>' + line.replace(/^[\s]*[-*]\s+/, '') + '</li>');
+                } else {
+                    if (inList) {
+                        processed.push('</ul>');
+                        inList = false;
+                    }
+                    processed.push(line);
+                }
+            }
+            if (inList) processed.push('</ul>');
+            
+            html = processed.join('\n');
+            
+            html = html.replace(/\n\n+/g, '</p><p>');
+            html = '<p>' + html + '</p>';
+            html = html.replace(/<p><\/p>/g, '');
+            html = html.replace(/\n/g, '<br>');
+            
+            return html;
+        }
+
+        function renderMath() {
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise().catch(err => console.error('MathJax error:', err));
+            }
+        }
+
+        function copyAnswer() {
+            if (!state.answerText) {
+                showNotification('No answer to copy', 'error');
+                return;
+            }
+            
+            navigator.clipboard.writeText(state.answerText)
+                .then(() => showNotification('Copied to clipboard! ✓', 'success', 2000))
+                .catch(() => showNotification('Copy failed', 'error'));
+        }
+
+        async function submitFeedback(type) {
+            if (!state.chatId) {
+                showNotification('No active chat', 'error');
+                return;
+            }
+            
+            const likeBtn = document.getElementById('like-btn');
+            const dislikeBtn = document.getElementById('dislike-btn');
+            const reportBtn = document.getElementById('report-btn');
+            
+            if (!likeBtn || !dislikeBtn || !reportBtn) {
+                console.error('Feedback buttons not found');
+                return;
+            }
+            
+            [likeBtn, dislikeBtn, reportBtn].forEach(btn => {
+                btn.classList.remove('active-like', 'active-dislike', 'active-report');
+            });
+            
+            if (type === 'like') likeBtn.classList.add('active-like');
+            if (type === 'dislike') dislikeBtn.classList.add('active-dislike');
+            if (type === 'report') reportBtn.classList.add('active-report');
+            
+            try {
+                const response = await fetch(`${CONFIG.API_URL}/feedback`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${state.token}`,
+                       
+                    },
+                    body: JSON.stringify({
+                        chatId: state.chatId,
+                        feedbackType: type,
+                        timestamp: new Date().toISOString()
+                    })
+                });
+                
+                if (!response.ok) throw new Error('Feedback failed');
+                
+                const messages = {
+                    like: '👍 Thanks for your feedback!',
+                    dislike: '👎 Feedback noted. We\'ll improve!',
+                    report: '🚩 Issue reported. We\'ll review it!'
+                };
+                
+                showNotification(messages[type], 'success', 2000);
+            } catch (error) {
+                console.error('Feedback error:', error);
+                showNotification('Failed to submit feedback', 'error');
+            }
+        }
+
+        async function loadHistory() {
+            if (!state.user) return;
+            
+            try {
+                const response = await fetch(`${CONFIG.API_URL}/user/chat-history?page=1&limit=20`, {
+                    headers: getAuthHeaders(),
+                        'Authorization': `Bearer ${state.token}`,
+                       
+                    }
+                });
+                
+                if (!response.ok) return;
+                
+                const data = await response.json();
+                displayHistory(data.chatHistory || []);
+            } catch (error) {
+                console.error('History error:', error);
+            }
+        }
+
+        function displayHistory(history) {
+            const historyList = document.getElementById('history-list');
+            
+            if (history.length === 0) {
+                historyList.innerHTML = '<div class="no-history">No history yet</div>';
+                return;
+            }
+            
+            historyList.innerHTML = history.map(item => `
+                <div class="history-item" onclick="rerunSearch('${escapeHtml(item.question).replace(/'/g, "\\'")}')">
+                    <div class="history-question">${escapeHtml(item.question)}</div>
+                    <div class="history-date">${new Date(item.timestamp).toLocaleDateString()}</div>
+                </div>
+            `).join('');
+        }
+
+        function rerunSearch(question) {
+            const isMobile = window.innerWidth <= 968;
+            if (isMobile) {
+                document.getElementById('search-input-mobile').value = question;
+            } else {
+                document.getElementById('search-input').value = question;
+            }
+            performSearch();
+        }
+
+        function showNotification(message, type = 'info', duration = 3000) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type} show`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, duration);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        window.copyAnswer = copyAnswer;
+        window.submitFeedback = submitFeedback;
+        window.rerunSearch = rerunSearch;
+        window.searchRelatedTopic = searchRelatedTopic;
+        window.toggleSource = toggleSource;
     </script>
 </body>
 </html>
