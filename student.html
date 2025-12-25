@@ -1519,7 +1519,7 @@
             try {
                 console.log('📊 Loading metadata from database...');
                 
-                const response = await fetch(`${CONFIG.API_URL}/metadata`, {
+                const response = await fetch(`${CONFIG.API_URL}/metadata/standards`, {
                     headers: getAuthHeaders()
                 });
 
