@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .school-logo-small {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary-color, #667eea);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .school-logo-small img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .school-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .navbar-user {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-info {
+            text-align: right;
+        }
+
+        .user-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .user-role {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .logout-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .logout-btn:hover {
+            background: #c0392b;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 0 30px;
+        }
+
+        .dashboard-header {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .dashboard-header h1 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .dashboard-header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab {
+            background: none;
+            border: none;
+            padding: 12px 24px;
+            cursor: pointer;
+            font-size: 15px;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            color: var(--primary-color, #667eea);
+            border-bottom-color: var(--primary-color, #667eea);
+            font-weight: 600;
+        }
+
+        .tab:hover {
+            color: var(--primary-color, #667eea);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card h3 {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .number {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary-color, #667eea);
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn {
+            background: var(--primary-color, #667eea);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: #f8f9fa;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        th {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        td {
+            color: #666;
+            font-size: 14px;
+        }
+
+        tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-bar select,
+        .filter-bar input {
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            font-size: 22px;
+            color: #333;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            color: var(--primary-color, #667eea);
+            cursor: pointer;
+            padding: 5px 10px;
+            font-size: 13px;
+        }
+
+        .action-btn:hover {
+            text-decoration: underline;
+        }
+
+        .action-btn.delete {
+            color: #e74c3c;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .container {
+                padding: 0 15px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tabs {
+                overflow-x: auto;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <div class="school-logo-small" id="navLogo">S</div>
+            <span class="school-name" id="navSchoolName">School Portal</span>
+        </div>
+        <div class="navbar-user">
+            <div class="user-info">
+                <div class="user-name" id="userName">Loading...</div>
+                <div class="user-role">Teacher</div>
+            </div>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="dashboard-header">
+            <h1>Welcome, <span id="userNameTitle">Teacher</span>!</h1>
+            <p>Manage your students and track their progress</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Total Students</h3>
+                <div class="number" id="totalStudents">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Active Classes</h3>
+                <div class="number" id="activeClasses">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Subjects Teaching</h3>
+                <div class="number" id="totalSubjects">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Questions This Week</h3>
+                <div class="number" id="questionsThisWeek">0</div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('students')">📚 Students</button>
+            <button class="tab" onclick="switchTab('classes')">🏫 My Classes</button>
+            <button class="tab" onclick="switchTab('ai-tutor')">🤖 AI Tutor</button>
+        </div>
+
+        <!-- Students Tab -->
+        <div class="tab-content active" id="students-tab">
+            <div class="card">
+                <div class="card-title">
+                    <span>Student Management</span>
+                    <button class="btn" onclick="showUpdateStudentModal()">Update Student Details</button>
+                </div>
+
+                <div class="filter-bar">
+                    <select id="filterStandard" onchange="filterStudents()">
+                        <option value="">All Standards</option>
+                    </select>
+                    <select id="filterSection" onchange="filterStudents()">
+                        <option value="">All Sections</option>
+                        <option value="A">Section A</option>
+                        <option value="B">Section B</option>
+                        <option value="C">Section C</option>
+                    </select>
+                    <input type="text" id="searchStudent" placeholder="Search by name..." oninput="filterStudents()">
+                </div>
+
+                <div id="studentsTableContainer">
+                    <div class="loading">Loading students...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Classes Tab -->
+        <div class="tab-content" id="classes-tab">
+            <div class="card">
+                <div class="card-title">My Assigned Classes</div>
+                <div id="classesContainer">
+                    <div class="loading">Loading classes...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Tutor Tab -->
+        <div class="tab-content" id="ai-tutor-tab">
+            <div class="card">
+                <div class="card-title">🤖 AI Teaching Assistant</div>
+                <div style="height: 500px; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; overflow-y: auto; margin-bottom: 20px; background: #f9f9f9;" id="chatContainer">
+                    <div style="background: white; padding: 12px 16px; border-radius: 8px; margin-bottom: 15px; max-width: 80%; border: 1px solid #e0e0e0;">
+                        <strong>AI Assistant:</strong> Hello! I can help you with lesson planning, student assessments, and subject content. How can I assist you today?
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="chatInput" placeholder="Ask for help with teaching..." style="flex: 1; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px;" onkeypress="if(event.key==='Enter') sendMessage()">
+                    <button class="btn" onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Student Modal -->
+    <div class="modal" id="updateStudentModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Update Student Details</h2>
+                <button class="close-btn" onclick="closeUpdateStudentModal()">&times;</button>
+            </div>
+            <form id="updateStudentForm" onsubmit="updateStudent(event)">
+                <div class="form-group">
+                    <label>Select Student</label>
+                    <select id="studentSelect" required onchange="loadStudentDetails()">
+                        <option value="">Choose a student...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Standard</label>
+                    <select id="studentStandard">
+                        <option value="">Not Set</option>
+                        <option value="6">6th Standard</option>
+                        <option value="7">7th Standard</option>
+                        <option value="8">8th Standard</option>
+                        <option value="9">9th Standard</option>
+                        <option value="10">10th Standard</option>
+                        <option value="11">11th Standard</option>
+                        <option value="12">12th Standard</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Section</label>
+                    <select id="studentSection">
+                        <option value="">Not Set</option>
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Roll Number</label>
+                    <input type="text" id="studentRoll" placeholder="e.g., 101">
+                </div>
+                <div class="form-group">
+                    <label>Subjects (comma-separated)</label>
+                    <input type="text" id="studentSubjects" placeholder="e.g., Mathematics, Physics, Chemistry">
+                </div>
+                <button type="submit" class="btn" style="width: 100%;">Update Student</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = "https://dnotflkcoj.execute-api.ap-southeast-2.amazonaws.com/prod";
+        let currentUser = null;
+        let allStudents = [];
+        let filteredStudents = [];
+
+        // Check authentication
+        function checkAuth() {
+            const authToken = localStorage.getItem('authToken');
+            const userRole = localStorage.getItem('userRole');
+            
+            if (!authToken || userRole !== 'teacher') {
+                window.location.href = 'login.html';
+                return false;
+            }
+            return true;
+        }
+
+        // Get auth headers
+        function getAuthHeaders() {
+            const sessionToken = localStorage.getItem('sessionToken');
+            const schoolCode = localStorage.getItem('schoolCode');
+            
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${sessionToken}`,
+                'X-School-ID': schoolCode
+            };
+        }
+
+        // Load school branding
+        async function loadSchoolBranding() {
+            const schoolCode = localStorage.getItem('schoolCode');
+            const schoolName = localStorage.getItem('schoolName');
+
+            if (schoolName) {
+                document.getElementById('navSchoolName').textContent = schoolName;
+                document.getElementById('navLogo').textContent = schoolName.charAt(0);
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/school/branding/${schoolCode}`);
+                if (response.ok) {
+                    const school = await response.json();
+                    document.getElementById('navSchoolName').textContent = school.name;
+                    
+                    if (school.primaryColor) {
+                        document.documentElement.style.setProperty('--primary-color', school.primaryColor);
+                    }
+
+                    if (school.logo) {
+                        document.getElementById('navLogo').innerHTML = `<img src="${school.logo}" alt="${school.name}">`;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading school branding:', error);
+            }
+        }
+
+        // Load teacher profile
+        async function loadTeacherProfile() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/user/session-info`, {
+                    headers: getAuthHeaders()
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    currentUser = data.user;
+
+                    document.getElementById('userName').textContent = currentUser.name || currentUser.email;
+                    document.getElementById('userNameTitle').textContent = currentUser.name || 'Teacher';
+
+                    // Update stats
+                    document.getElementById('totalSubjects').textContent = currentUser.teachingSubjects?.length || 0;
+                    document.getElementById('activeClasses').textContent = currentUser.assignedClasses?.length || 0;
+                }
+            } catch (error) {
+                console.error('Error loading profile:', error);
+            }
+        }
+
+        // Load all students
+        async function loadStudents() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin/users/role/student`, {
+                    headers: getAuthHeaders()
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    allStudents = data.users || [];
+                    filteredStudents = allStudents;
+
+                    document.getElementById('totalStudents').textContent = allStudents.length;
+
+                    renderStudentsTable();
+                    populateFilters();
+                    populateStudentSelect();
+                }
+            } catch (error) {
+                console.error('Error loading students:', error);
+                document.getElementById('studentsTableContainer').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><p>Failed to load students</p></div>';
+            }
+        }
+
+        // Render students table
+        function renderStudentsTable() {
+            const container = document.getElementById('studentsTableContainer');
+
+            if (filteredStudents.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">👥</div><p>No students found</p></div>';
+                return;
+            }
+
+            let html = '<table><thead><tr><th>Name</th><th>Email</th><th>Standard</th><th>Section</th><th>Roll No</th><th>Questions Asked</th><th>Status</th></tr></thead><tbody>';
+
+            filteredStudents.forEach(student => {
+                const status = student.isActive ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-danger">Inactive</span>';
+                
+                html += `
+                    <tr>
+                        <td>${student.name || '-'}</td>
+                        <td>${student.email}</td>
+                        <td>${student.standard || '-'}</td>
+                        <td>${student.section || '-'}</td>
+                        <td>${student.rollNumber || '-'}</td>
+                        <td>${student.searchCount || 0}</td>
+                        <td>${status}</td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // Populate filters
+        function populateFilters() {
+            const standards = [...new Set(allStudents.map(s => s.standard).filter(Boolean))];
+            const standardSelect = document.getElementById('filterStandard');
+            
+            standards.forEach(std => {
+                const option = document.createElement('option');
+                option.value = std;
+                option.textContent = `Standard ${std}`;
+                standardSelect.appendChild(option);
+            });
+        }
+
+        // Filter students
+        function filterStudents() {
+            const standard = document.getElementById('filterStandard').value;
+            const section = document.getElementById('filterSection').value;
+            const search = document.getElementById('searchStudent').value.toLowerCase();
+
+            filteredStudents = allStudents.filter(student => {
+                const matchStandard = !standard || student.standard === standard;
+                const matchSection = !section || student.section === section;
+                const matchSearch = !search || student.name?.toLowerCase().includes(search) || student.email.toLowerCase().includes(search);
+
+                return matchStandard && matchSection && matchSearch;
+            });
+
+            renderStudentsTable();
+        }
+
+        // Populate student select
+        function populateStudentSelect() {
+            const select = document.getElementById('studentSelect');
+            select.innerHTML = '<option value="">Choose a student...</option>';
+
+            allStudents.forEach(student => {
+                const option = document.createElement('option');
+                option.value = student._id;
+                option.textContent = `${student.name || student.email} - ${student.standard || 'No Standard'}${student.section || ''}`;
+                option.dataset.student = JSON.stringify(student);
+                select.appendChild(option);
+            });
+        }
+
+        // Load student details in modal
+        function loadStudentDetails() {
+            const select = document.getElementById('studentSelect');
+            const selectedOption = select.options[select.selectedIndex];
+
+            if (!selectedOption.dataset.student) return;
+
+            const student = JSON.parse(selectedOption.dataset.student);
+
+            document.getElementById('studentStandard').value = student.standard || '';
+            document.getElementById('studentSection').value = student.section || '';
+            document.getElementById('studentRoll').value = student.rollNumber || '';
+            document.getElementById('studentSubjects').value = student.subjects?.join(', ') || '';
+        }
+
+        // Update student
+        async function updateStudent(event) {
+            event.preventDefault();
+
+            const studentId = document.getElementById('studentSelect').value;
+            if (!studentId) {
+                alert('Please select a student');
+                return;
+            }
+
+            const updateData = {
+                standard: document.getElementById('studentStandard').value || null,
+                section: document.getElementById('studentSection').value || null,
+                rollNumber: document.getElementById('studentRoll').value || null,
+                subjects: document.getElementById('studentSubjects').value.split(',').map(s => s.trim()).filter(Boolean)
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin/users/${studentId}`, {
+                    method: 'PUT',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify(updateData)
+                });
+
+                if (response.ok) {
+                    alert('Student updated successfully!');
+                    closeUpdateStudentModal();
+                    loadStudents();
+                } else {
+                    const error = await response.json();
+                    alert('Error: ' + error.error);
+                }
+            } catch (error) {
+                console.error('Error updating student:', error);
+                alert('Failed to update student');
+            }
+        }
+
+        // Show/hide modal
+        function showUpdateStudentModal() {
+            document.getElementById('updateStudentModal').classList.add('active');
+        }
+
+        function closeUpdateStudentModal() {
+            document.getElementById('updateStudentModal').classList.remove('active');
+            document.getElementById('updateStudentForm').reset();
+        }
+
+        // Load classes
+        async function loadClasses() {
+            const container = document.getElementById('classesContainer');
+
+            if (!currentUser || !currentUser.assignedClasses || currentUser.assignedClasses.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🏫</div><p>No classes assigned yet</p></div>';
+                return;
+            }
+
+            let html = '';
+            currentUser.assignedClasses.forEach((cls, index) => {
+                const studentsInClass = allStudents.filter(s => s.standard === cls.standard && s.section === cls.section);
+                
+                html += `
+                    <div class="stat-card">
+                        <h3>Class ${cls.standard}${cls.section}</h3>
+                        <div class="number">${studentsInClass.length}</div>
+                        <p style="margin-top: 10px; color: #666; font-size: 14px;">Students enrolled</p>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = `<div class="stats-grid">${html}</div>`;
+        }
+
+        // Send message to AI
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            const chatContainer = document.getElementById('chatContainer');
+
+            const userMsg = document.createElement('div');
+            userMsg.style.cssText = 'background: var(--primary-color, #667eea); color: white; padding: 12px 16px; border-radius: 8px; margin-bottom: 15px; max-width: 80%; margin-left: auto; text-align: right;';
+            userMsg.innerHTML = `<strong>You:</strong> ${message}`;
+            chatContainer.appendChild(userMsg);
+
+            input.value = '';
+
+            const loadingMsg = document.createElement('div');
+            loadingMsg.className = 'loading';
+            loadingMsg.textContent = 'AI is thinking...';
+            chatContainer.appendChild(loadingMsg);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/rag`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        question: message,
+                        preferences: {
+                            standard: null,
+                            subject: currentUser?.teachingSubjects?.[0],
+                            medium: 'English'
+                        }
+                    })
+                });
+
+                chatContainer.removeChild(loadingMsg);
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const aiMsg = document.createElement('div');
+                    aiMsg.style.cssText = 'background: white; padding: 12px 16px; border-radius: 8px; margin-bottom: 15px; max-width: 80%; border: 1px solid #e0e0e0;';
+                    aiMsg.innerHTML = `<strong>AI Assistant:</strong><br>${data.htmlContent || data.answer || 'No response'}`;
+                    chatContainer.appendChild(aiMsg);
+                } else {
+                    throw new Error('Failed to get response');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                chatContainer.removeChild(loadingMsg);
+                const errorMsg = document.createElement('div');
+                errorMsg.style.cssText = 'background: #f8d7da; color: #721c24; padding: 12px 16px; border-radius: 8px; margin-bottom: 15px;';
+                errorMsg.textContent = 'Error: Failed to get response';
+                chatContainer.appendChild(errorMsg);
+            }
+
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // Switch tabs
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+
+            if (tabName === 'classes') {
+                loadClasses();
+            }
+        }
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            try {
+                await fetch(`${API_BASE_URL}/auth/logout`, {
+                    method: 'POST',
+                    headers: getAuthHeaders()
+                });
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+
+            localStorage.clear();
+            window.location.href = 'login.html';
+        });
+
+        // Initialize
+        window.addEventListener('DOMContentLoaded', async () => {
+            if (!checkAuth()) return;
+            
+            await loadSchoolBranding();
+            await loadTeacherProfile();
+            await loadStudents();
+        });
+    </script>
+</body>
+</html>
