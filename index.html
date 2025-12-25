@@ -394,6 +394,7 @@
                 localStorage.setItem('userEmail', data.user.email);
                 localStorage.setItem('userName', data.user.name);
                 localStorage.setItem('userPicture', data.user.picture);
+                localStorage.setItem('searchCount', data.user.searchCount || '0');
                 
                 console.log('✅ Login successful! Role:', data.user.role);
                 
