@@ -2010,30 +2010,20 @@ sup {
             
             state.token = sessionToken;
             state.schoolCode = schoolCode;
+            
+            // Get search count from localStorage (synced with backend)
+            const savedSearchCount = parseInt(localStorage.getItem('searchCount') || '0', 10);
+            
             state.user = {
                 name: userName,
                 email: userEmail,
                 picture: userPicture,
                 id: userId,
-                searchCount: 0
+                searchCount: savedSearchCount
             };
             
             // Load school branding
             await loadSchoolBranding();
-            
-            // Fetch user stats from backend
-            try {
-                const response = await fetch(`${CONFIG.API_URL}/user/stats`, {
-                    headers: getAuthHeaders()
-                });
-                
-                if (response.ok) {
-                    const stats = await response.json();
-                    state.user.searchCount = stats.searchCount || 0;
-                }
-            } catch (error) {
-                console.error('Failed to load user stats:', error);
-            }
             
             // Show user profile
             showUserProfile();
@@ -2461,6 +2451,9 @@ sup {
                         state.user.searchCount = (state.user.searchCount || 0) + 1;
                     }
                     document.getElementById('search-count').textContent = state.user.searchCount;
+                    
+                    // Persist to localStorage
+                    localStorage.setItem('searchCount', state.user.searchCount.toString());
                     saveSession();
                 }
                 
