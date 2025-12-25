@@ -2021,6 +2021,20 @@ sup {
             // Load school branding
             await loadSchoolBranding();
             
+            // Fetch user stats from backend
+            try {
+                const response = await fetch(`${CONFIG.API_URL}/user/stats`, {
+                    headers: getAuthHeaders()
+                });
+                
+                if (response.ok) {
+                    const stats = await response.json();
+                    state.user.searchCount = stats.searchCount || 0;
+                }
+            } catch (error) {
+                console.error('Failed to load user stats:', error);
+            }
+            
             // Show user profile
             showUserProfile();
             showMainContent();
@@ -2439,8 +2453,13 @@ sup {
                 
                 displayResults(data, question, responseTime, currentPreferences);
                 
+                // Update search count from backend response if available
                 if (state.user) {
-                    state.user.searchCount = (state.user.searchCount || 0) + 1;
+                    if (data.searchCount !== undefined) {
+                        state.user.searchCount = data.searchCount;
+                    } else {
+                        state.user.searchCount = (state.user.searchCount || 0) + 1;
+                    }
                     document.getElementById('search-count').textContent = state.user.searchCount;
                     saveSession();
                 }
@@ -2671,20 +2690,6 @@ function displayResults(data, question, responseTime, appliedPreferences) {
                 resultHTML += `
                             <div class="source-image-error">
                                 ⚠️ No image available for this source
-                            </div>
-                `;
-            }
-            
-            // Optionally show text excerpt if available
-            if (sourceText && sourceText.length > 0) {
-                const truncatedText = sourceText.length > 500 ? 
-                    sourceText.substring(0, 500) + '...' : 
-                    sourceText;
-                
-                resultHTML += `
-                            <div class="source-text-label" style="margin-top: 1rem;">📝 Text Excerpt</div>
-                            <div class="source-full-text">
-                                ${escapeHtml(truncatedText)}
                             </div>
                 `;
             }
