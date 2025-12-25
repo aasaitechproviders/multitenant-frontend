@@ -1661,6 +1661,7 @@ sup {
         let state = {
             user: null,
             token: null,
+            schoolCode: null,
             chatId: null,
             answerText: '',
             preferences: { standard: '', subject: '', medium: 'english' },
@@ -1679,14 +1680,33 @@ sup {
             return {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${state.token}`,
-                'X-School-ID': state.schoolCode || localStorage.getItem('schoolCode') || 'demo'
+                'X-School-ID': state.schoolCode || localStorage.getItem('schoolCode') || ''
             };
         }
+
+        // Load school branding
+        async function loadSchoolBranding() {
+            const schoolCode = state.schoolCode || localStorage.getItem('schoolCode');
+            if (!schoolCode) return;
+            try {
+                const response = await fetch(`${CONFIG.API_URL}/api/school/branding/${schoolCode}`);
+                if (response.ok) {
+                    const schoolData = await response.json();
+                    const logoDiv = document.querySelector('.logo');
+                    if (logoDiv) logoDiv.textContent = `📚 ${schoolData.name}`;
+                    if (schoolData.primaryColor) document.documentElement.style.setProperty('--primary', schoolData.primaryColor);
+                    if (schoolData.secondaryColor) document.documentElement.style.setProperty('--secondary', schoolData.secondaryColor);
+                    console.log('✅ School branding loaded:', schoolData.name);
+                }
+            } catch (error) {
+                console.error('❌ Failed to load school branding:', error);
+            }
+
+        };
 
         document.addEventListener('DOMContentLoaded', init);
 
         function init() {
-            // Skip Google Sign-In for multi-tenant
             setupEventListeners();
             initVoiceRecognition();
             restoreSession();
@@ -1769,7 +1789,7 @@ sup {
             try {
                 const response = await fetch(`${CONFIG.API_URL}/metadata/standards`, {
                     method: 'GET',
-                    headers: getAuthHeaders(),
+                    headers: {
                        
                     }
                 });
@@ -1821,7 +1841,7 @@ sup {
 
                 const response = await fetch(url, {
                     method: 'GET',
-                    headers: getAuthHeaders(),
+                    headers: {
                        
                     }
                 });
@@ -1867,7 +1887,7 @@ sup {
             try {
                 const response = await fetch(`${CONFIG.API_URL}/metadata/mediums`, {
                     method: 'GET',
-                    headers: getAuthHeaders(),
+                    headers: {
                        
                     }
                 });
