@@ -815,9 +815,9 @@
                 if (!response.ok) {
                     const teachers = state.teachers.length;
                     const students = state.students.length;
-                    const activeTeachers = state.teachers.filter(t => t.verified).length;
+                    const activeTeachers = state.teachers.filter(t => t.googleId).length;
                     const activeStudents = state.students.length;
-                    const pendingTeachers = state.teachers.filter(t => !t.verified).length;
+                    const pendingTeachers = state.teachers.filter(t => !t.googleId).length;
 
                     document.getElementById('total-students').textContent = students;
                     document.getElementById('total-teachers').textContent = teachers;
@@ -876,7 +876,7 @@
                     <td>${escapeHtml(teacher.name)}</td>
                     <td>${escapeHtml(teacher.email)}</td>
                     <td>
-                        ${teacher.verified 
+                        ${teacher.googleId 
                             ? '<span class="badge badge-success">Active</span>' 
                             : '<span class="badge badge-warning">Pending</span>'}
                     </td>
@@ -983,11 +983,7 @@
                 } else {
                     showNotification('Teacher added successfully! They can now sign in with Google.', 'success');
                 }
-                if (data.wasPromoted) {
-                    showNotification(`User promoted from ${data.previousRole} to teacher successfully!`, 'success');
-                } else {
-                    showNotification('Teacher added successfully! They can now sign in with Google.', 'success');
-                }
+                
                 closeAddTeacherModal();
                 await loadTeachers();
                 await loadStats();
