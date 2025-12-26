@@ -977,7 +977,17 @@
                     throw new Error(data.error || 'Failed to add teacher');
                 }
 
-                showNotification('Teacher added successfully! They can now sign in with Google.', 'success');
+                // Show appropriate message based on whether user was promoted or newly added
+                if (data.wasPromoted) {
+                    showNotification(`User promoted from ${data.previousRole} to teacher successfully!`, 'success');
+                } else {
+                    showNotification('Teacher added successfully! They can now sign in with Google.', 'success');
+                }
+                if (data.wasPromoted) {
+                    showNotification(`User promoted from ${data.previousRole} to teacher successfully!`, 'success');
+                } else {
+                    showNotification('Teacher added successfully! They can now sign in with Google.', 'success');
+                }
                 closeAddTeacherModal();
                 await loadTeachers();
                 await loadStats();
