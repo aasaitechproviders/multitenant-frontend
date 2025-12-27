@@ -621,11 +621,13 @@
         function getAuthHeaders() {
             const sessionToken = localStorage.getItem('sessionToken');
             const schoolCode = localStorage.getItem('schoolCode');
+            const userEmail = localStorage.getItem('userEmail');
             
             return {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${sessionToken}`,
-                'X-School-ID': schoolCode
+                'X-School-ID': schoolCode,
+                'X-User-Email': userEmail || 'unknown'  // ✅ ADDED: Send teacher email
             };
         }
 
@@ -1144,21 +1146,42 @@
         // Load statistics
         async function loadStats() {
             try {
+                console.log('📊 Loading teacher statistics...');
+                console.log('   API URL:', `${CONFIG.ADMIN_API_URL}/api/teacher/documents`);
+                console.log('   User Email:', localStorage.getItem('userEmail'));
+                
                 const response = await fetch(`${CONFIG.ADMIN_API_URL}/api/teacher/documents`, {
                     headers: getAuthHeaders()
                 });
 
-                if (response.ok) {
-                    const data = await response.json();
-                    allDocuments = data.documents;
-                    
-                    document.getElementById('totalDocs').textContent = data.stats.total;
-                    document.getElementById('processedDocs').textContent = data.stats.completed;
-                    document.getElementById('processingDocs').textContent = data.stats.processing;
-                    document.getElementById('totalPages').textContent = data.stats.totalPages;
+                console.log('   Response status:', response.status);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ API Error:', response.status, errorText);
+                    throw new Error(`API returned ${response.status}: ${errorText}`);
                 }
+
+                const data = await response.json();
+                console.log('✅ Stats loaded:', data.stats);
+                console.log('   Documents count:', data.documents.length);
+                
+                allDocuments = data.documents;
+                
+                document.getElementById('totalDocs').textContent = data.stats.total;
+                document.getElementById('processedDocs').textContent = data.stats.completed;
+                document.getElementById('processingDocs').textContent = data.stats.processing;
+                document.getElementById('totalPages').textContent = data.stats.totalPages;
+                
             } catch (error) {
-                console.error('Error loading stats:', error);
+                console.error('❌ Error loading stats:', error);
+                console.error('   Error details:', error.message);
+                
+                // Show user-friendly error
+                document.getElementById('totalDocs').textContent = '?';
+                document.getElementById('processedDocs').textContent = '?';
+                document.getElementById('processingDocs').textContent = '?';
+                document.getElementById('totalPages').textContent = '?';
             }
         }
 
@@ -1167,9 +1190,14 @@
             const container = document.getElementById('activitiesContainer');
             
             try {
+                console.log('📋 Loading activities...');
+                
                 if (allDocuments.length === 0) {
+                    console.log('   No documents in cache, fetching...');
                     await loadStats();
                 }
+                
+                console.log('   Total documents:', allDocuments.length);
                 
                 if (allDocuments.length === 0) {
                     container.innerHTML = `
@@ -1210,10 +1238,18 @@
 
                 html += '</tbody></table>';
                 container.innerHTML = html;
+                
+                console.log('✅ Activities table rendered');
 
             } catch (error) {
-                console.error('Error loading activities:', error);
-                container.innerHTML = '<div class="empty-state"><p>Error loading activities</p></div>';
+                console.error('❌ Error loading activities:', error);
+                console.error('   Error details:', error.message);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <p style="color: #e74c3c;">Error loading activities</p>
+                        <p style="font-size: 14px; margin-top: 10px;">${error.message}</p>
+                    </div>
+                `;
             }
         }
 
