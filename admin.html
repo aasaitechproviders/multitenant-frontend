@@ -756,6 +756,7 @@
             deleteUserType: null
         };
 
+        // ✅ Clean headers - no custom X-User-Email
         function getAuthHeaders() {
             const token = localStorage.getItem('sessionToken');
             const schoolCode = localStorage.getItem('schoolCode');
@@ -771,12 +772,19 @@
             const userRole = localStorage.getItem('userRole');
             const schoolCode = localStorage.getItem('schoolCode');
 
+            console.log('🔐 Admin Dashboard - Session Restore');
+            console.log('   Token:', !!token);
+            console.log('   Role:', userRole);
+            console.log('   School Code:', schoolCode);
+
             if (!token || !schoolCode) {
+                console.log('❌ No session, redirecting to index');
                 window.location.href = 'index.html';
                 return;
             }
 
             if (userRole !== 'admin') {
+                console.log('❌ Not admin, redirecting to:', `${userRole}.html`);
                 window.location.href = `${userRole}.html`;
                 return;
             }
@@ -790,6 +798,8 @@
                 role: userRole
             };
 
+            console.log('✅ Session valid, user:', state.user);
+
             document.getElementById('school-name').textContent = localStorage.getItem('schoolName') || 'School Portal';
             document.getElementById('user-name').textContent = state.user.name;
             document.getElementById('user-avatar').src = state.user.picture;
@@ -799,6 +809,7 @@
         }
 
         async function loadDashboardData() {
+            console.log('📊 Loading dashboard data...');
             await Promise.all([
                 loadTeachers(),
                 loadStudents(),
@@ -808,11 +819,13 @@
 
         async function loadStats() {
             try {
+                console.log('📈 Fetching stats...');
                 const response = await fetch(`${CONFIG.ADMIN_API_URL}/admin/stats`, {
                     headers: getAuthHeaders()
                 });
 
                 if (!response.ok) {
+                    console.warn('⚠️ Stats API failed, calculating locally');
                     const teachers = state.teachers.length;
                     const students = state.students.length;
                     const activeTeachers = state.teachers.filter(t => t.googleId).length;
@@ -827,17 +840,20 @@
                 }
 
                 const data = await response.json();
+                console.log('✅ Stats:', data);
+                
                 document.getElementById('total-students').textContent = data.totalStudents || 0;
                 document.getElementById('total-teachers').textContent = data.totalTeachers || 0;
                 document.getElementById('active-users').textContent = data.activeUsers || 0;
                 document.getElementById('pending-users').textContent = data.pendingUsers || 0;
             } catch (error) {
-                console.error('Stats error:', error);
+                console.error('❌ Stats error:', error);
             }
         }
 
         async function loadTeachers() {
             try {
+                console.log('👨‍🏫 Fetching teachers...');
                 const response = await fetch(`${CONFIG.ADMIN_API_URL}/admin/teachers`, {
                     headers: getAuthHeaders()
                 });
@@ -846,9 +862,10 @@
 
                 const data = await response.json();
                 state.teachers = data.teachers || [];
+                console.log(`✅ Loaded ${state.teachers.length} teachers`);
                 displayTeachers(state.teachers);
             } catch (error) {
-                console.error('Load teachers error:', error);
+                console.error('❌ Load teachers error:', error);
                 showNotification('Failed to load teachers', 'error');
             }
         }
@@ -892,6 +909,7 @@
 
         async function loadStudents() {
             try {
+                console.log('👨‍🎓 Fetching students...');
                 const response = await fetch(`${CONFIG.ADMIN_API_URL}/admin/students`, {
                     headers: getAuthHeaders()
                 });
@@ -900,9 +918,10 @@
 
                 const data = await response.json();
                 state.students = data.students || [];
+                console.log(`✅ Loaded ${state.students.length} students`);
                 displayStudents(state.students);
             } catch (error) {
-                console.error('Load students error:', error);
+                console.error('❌ Load students error:', error);
                 showNotification('Failed to load students', 'error');
             }
         }
@@ -965,6 +984,8 @@
             submitBtn.innerHTML = '<span class="loading"></span><span>Adding...</span>';
 
             try {
+                console.log('➕ Adding teacher:', { name, email });
+                
                 const response = await fetch(`${CONFIG.ADMIN_API_URL}/admin/teachers`, {
                     method: 'POST',
                     headers: getAuthHeaders(),
@@ -977,18 +998,19 @@
                     throw new Error(data.error || 'Failed to add teacher');
                 }
 
-                // Show appropriate message based on whether user was promoted or newly added
+                console.log('✅ Teacher added:', data);
+
                 if (data.wasPromoted) {
-                    showNotification(`User promoted from ${data.previousRole} to teacher successfully!`, 'success');
+                    showNotification(`User promoted from ${data.previousRole} to teacher!`, 'success');
                 } else {
-                    showNotification('Teacher added successfully! They can now sign in with Google.', 'success');
+                    showNotification('Teacher added successfully!', 'success');
                 }
                 
                 closeAddTeacherModal();
                 await loadTeachers();
                 await loadStats();
             } catch (error) {
-                console.error('Add teacher error:', error);
+                console.error('❌ Add teacher error:', error);
                 showNotification(error.message, 'error');
             } finally {
                 submitBtn.disabled = false;
@@ -1016,6 +1038,8 @@
             confirmBtn.innerHTML = '<span class="loading"></span><span>Deleting...</span>';
 
             try {
+                console.log(`🗑️ Deleting ${state.deleteUserType}:`, state.deleteUserId);
+                
                 const endpoint = state.deleteUserType === 'teacher' 
                     ? `/admin/teachers/${state.deleteUserId}`
                     : `/admin/students/${state.deleteUserId}`;
@@ -1027,7 +1051,8 @@
 
                 if (!response.ok) throw new Error('Failed to delete user');
 
-                showNotification(`${state.deleteUserType === 'teacher' ? 'Teacher' : 'Student'} deleted successfully`, 'success');
+                console.log('✅ Deleted successfully');
+                showNotification(`${state.deleteUserType === 'teacher' ? 'Teacher' : 'Student'} deleted`, 'success');
                 closeDeleteModal();
 
                 if (state.deleteUserType === 'teacher') {
@@ -1037,7 +1062,7 @@
                 }
                 await loadStats();
             } catch (error) {
-                console.error('Delete error:', error);
+                console.error('❌ Delete error:', error);
                 showNotification(error.message, 'error');
             } finally {
                 confirmBtn.disabled = false;
@@ -1062,6 +1087,7 @@
         }
 
         function signOut() {
+            console.log('👋 Signing out...');
             localStorage.clear();
             window.location.href = 'index.html';
         }
@@ -1082,16 +1108,20 @@
             return div.innerHTML;
         }
 
+        // Event Listeners
         document.getElementById('sign-out-btn').addEventListener('click', signOut);
         document.getElementById('add-teacher-form').addEventListener('submit', addTeacher);
         document.getElementById('teacher-search').addEventListener('input', (e) => searchTeachers(e.target.value));
         document.getElementById('student-search').addEventListener('input', (e) => searchStudents(e.target.value));
 
         window.addEventListener('DOMContentLoaded', () => {
-            console.log('🚀 Initializing Admin Dashboard...');
+            console.log('🚀 Admin Dashboard Initialized');
+            console.log('   School Code:', localStorage.getItem('schoolCode'));
+            console.log('   User Role:', localStorage.getItem('userRole'));
             restoreSession();
         });
 
+        // Global functions
         window.openAddTeacherModal = openAddTeacherModal;
         window.closeAddTeacherModal = closeAddTeacherModal;
         window.deleteUser = deleteUser;
