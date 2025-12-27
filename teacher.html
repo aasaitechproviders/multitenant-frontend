@@ -690,38 +690,44 @@
             }
         }
 
+
         // Load available standards from MongoDB
         async function loadStandards() {
             try {
+                console.log('📊 Loading standards from database...');
+                
                 const response = await fetch(`${CONFIG.ADMIN_API_URL}/api/documents/standards`, {
                     headers: getAuthHeaders()
                 });
 
                 const select = document.getElementById('standard');
                 
-                if (response.ok) {
-                    const data = await response.json();
-                    
-                    select.innerHTML = '<option value="">Select Standard</option>';
-                    
-                    const standards = data.standards.length > 0 ? data.standards : 
-                        ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
-                    
-                    standards.forEach(std => {
-                        const option = document.createElement('option');
-                        option.value = std;
-                        option.textContent = `Standard ${std}`;
-                        select.appendChild(option);
-                    });
-                } else {
-                    // Fallback to default
-                    loadDefaultStandards();
+                if (!response.ok) {
+                    throw new Error('Failed to fetch standards');
                 }
                 
+                const data = await response.json();
+                const standards = data.standards || [];
+                
+                if (standards.length === 0) {
+                    loadDefaultStandards();
+                    return;
+                }
+                
+                select.innerHTML = '<option value="">Select Standard</option>';
+                
+                standards.forEach(std => {
+                    const option = document.createElement('option');
+                    option.value = std;
+                    option.textContent = `Standard ${std}`;
+                    select.appendChild(option);
+                });
+                
                 select.disabled = false;
+                console.log(`✅ Loaded ${standards.length} standards:`, standards);
                 
             } catch (error) {
-                console.error('Error loading standards:', error);
+                console.error('❌ Error loading standards:', error);
                 loadDefaultStandards();
             }
         }
@@ -740,39 +746,58 @@
             select.disabled = false;
         }
 
-        // Load subjects based on standard
+        // Load subjects based on selected standard
         async function loadSubjects(standard) {
             const select = document.getElementById('subject');
+            
+            if (!standard) {
+                select.disabled = true;
+                select.innerHTML = '<option value="">Select standard first</option>';
+                
+                // Also reset dependent dropdowns
+                document.getElementById('language').disabled = true;
+                document.getElementById('language').innerHTML = '<option value="">Select subject first</option>';
+                document.getElementById('group').disabled = true;
+                document.getElementById('group').innerHTML = '<option value="">Select subject first</option>';
+                return;
+            }
+            
             select.innerHTML = '<option value="">Loading...</option>';
             select.disabled = true;
             
             try {
+                console.log(`📚 Loading subjects for standard ${standard}...`);
+                
                 const response = await fetch(`${CONFIG.ADMIN_API_URL}/api/documents/subjects/${standard}`, {
                     headers: getAuthHeaders()
                 });
 
-                if (response.ok) {
-                    const data = await response.json();
-                    
-                    select.innerHTML = '<option value="">Select Subject</option>';
-                    
-                    const subjects = data.subjects.length > 0 ? data.subjects : 
-                        ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'English', 'Tamil', 'Hindi', 'Social Science', 'Computer Science'];
-                    
-                    subjects.forEach(subj => {
-                        const option = document.createElement('option');
-                        option.value = subj;
-                        option.textContent = subj;
-                        select.appendChild(option);
-                    });
-                } else {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch subjects');
+                }
+
+                const data = await response.json();
+                const subjects = data.subjects || [];
+                
+                if (subjects.length === 0) {
                     loadDefaultSubjects();
+                    return;
                 }
                 
+                select.innerHTML = '<option value="">Select Subject</option>';
+                
+                subjects.forEach(subj => {
+                    const option = document.createElement('option');
+                    option.value = subj;
+                    option.textContent = subj;
+                    select.appendChild(option);
+                });
+                
                 select.disabled = false;
+                console.log(`✅ Loaded ${subjects.length} subjects for standard ${standard}:`, subjects);
                 
             } catch (error) {
-                console.error('Error loading subjects:', error);
+                console.error('❌ Error loading subjects:', error);
                 loadDefaultSubjects();
             }
         }
@@ -792,40 +817,55 @@
             select.disabled = false;
         }
 
-        // Load languages/mediums
+        // Load languages/mediums based on standard AND subject
         async function loadLanguages(standard, subject) {
             const select = document.getElementById('language');
+            
+            if (!standard || !subject) {
+                select.disabled = true;
+                select.innerHTML = '<option value="">Select subject first</option>';
+                return;
+            }
+            
             select.innerHTML = '<option value="">Loading...</option>';
             select.disabled = true;
             
             try {
+                console.log(`🌐 Loading languages for standard ${standard}, subject ${subject}...`);
+                
                 const response = await fetch(`${CONFIG.ADMIN_API_URL}/api/documents/languages/${standard}/${subject}`, {
                     headers: getAuthHeaders()
                 });
 
-                if (response.ok) {
-                    const data = await response.json();
-                    
-                    select.innerHTML = '<option value="">Select Language</option>';
-                    
-                    const languages = data.languages.length > 0 ? data.languages : ['en', 'ta', 'hi'];
-                    
-                    languages.forEach(lang => {
-                        const option = document.createElement('option');
-                        option.value = lang;
-                        option.textContent = lang === 'en' ? 'English' : 
-                                           lang === 'ta' ? 'Tamil' : 
-                                           lang === 'hi' ? 'Hindi' : lang;
-                        select.appendChild(option);
-                    });
-                } else {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch languages');
+                }
+
+                const data = await response.json();
+                const languages = data.languages || [];
+                
+                if (languages.length === 0) {
                     loadDefaultLanguages();
+                    return;
                 }
                 
+                select.innerHTML = '<option value="">Select Language</option>';
+                
+                languages.forEach(lang => {
+                    const option = document.createElement('option');
+                    option.value = lang;
+                    option.textContent = lang === 'en' ? 'English' : 
+                                       lang === 'ta' ? 'Tamil' : 
+                                       lang === 'hi' ? 'Hindi' : 
+                                       lang.toUpperCase();
+                    select.appendChild(option);
+                });
+                
                 select.disabled = false;
+                console.log(`✅ Loaded ${languages.length} languages:`, languages);
                 
             } catch (error) {
-                console.error('Error loading languages:', error);
+                console.error('❌ Error loading languages:', error);
                 loadDefaultLanguages();
             }
         }
@@ -841,72 +881,57 @@
             select.disabled = false;
         }
 
-        // Load groups
+        // Load groups based on standard AND subject
         async function loadGroups(standard, subject) {
             const select = document.getElementById('group');
+            
+            if (!standard || !subject) {
+                select.disabled = true;
+                select.innerHTML = '<option value="">Select subject first</option>';
+                return;
+            }
+            
             select.innerHTML = '<option value="">Loading...</option>';
             select.disabled = true;
             
             try {
+                console.log(`🎯 Loading groups for standard ${standard}, subject ${subject}...`);
+                
                 const response = await fetch(`${CONFIG.ADMIN_API_URL}/api/documents/groups/${standard}/${subject}`, {
                     headers: getAuthHeaders()
                 });
 
-                if (response.ok) {
-                    const data = await response.json();
-                    
-                    select.innerHTML = '<option value="">No Group (Optional)</option>';
-                    
-                    data.groups.forEach(grp => {
-                        const option = document.createElement('option');
-                        option.value = grp;
-                        option.textContent = grp;
-                        select.appendChild(option);
-                    });
-                } else {
-                    select.innerHTML = '<option value="">No Group (Optional)</option>';
+                if (!response.ok) {
+                    throw new Error('Failed to fetch groups');
                 }
+
+                const data = await response.json();
+                const groups = data.groups || [];
+                
+                select.innerHTML = '<option value="">No Group (Optional)</option>';
+                
+                groups.forEach(grp => {
+                    const option = document.createElement('option');
+                    option.value = grp;
+                    option.textContent = grp;
+                    select.appendChild(option);
+                });
                 
                 select.disabled = false;
                 
+                if (groups.length > 0) {
+                    console.log(`✅ Loaded ${groups.length} groups:`, groups);
+                } else {
+                    console.log('ℹ️ No groups available for this combination');
+                }
+                
             } catch (error) {
-                console.error('Error loading groups:', error);
+                console.error('❌ Error loading groups:', error);
                 select.innerHTML = '<option value="">No Group (Optional)</option>';
                 select.disabled = false;
             }
         }
 
-        // Handle dropdown changes
-        document.getElementById('standard').addEventListener('change', function() {
-            const standard = this.value;
-            if (standard) {
-                loadSubjects(standard);
-            } else {
-                document.getElementById('subject').innerHTML = '<option value="">Select standard first</option>';
-                document.getElementById('subject').disabled = true;
-                document.getElementById('language').innerHTML = '<option value="">Select subject first</option>';
-                document.getElementById('language').disabled = true;
-                document.getElementById('group').innerHTML = '<option value="">Select subject first</option>';
-                document.getElementById('group').disabled = true;
-            }
-        });
-
-        document.getElementById('subject').addEventListener('change', function() {
-            const subject = this.value;
-            const standard = document.getElementById('standard').value;
-            
-            if (subject && standard) {
-                loadLanguages(standard, subject);
-                loadGroups(standard, subject);
-            } else {
-                document.getElementById('language').innerHTML = '<option value="">Select subject first</option>';
-                document.getElementById('language').disabled = true;
-                document.getElementById('group').innerHTML = '<option value="">Select subject first</option>';
-                document.getElementById('group').disabled = true;
-            }
-        });
-
-        // File upload handlers
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
         const uploadBtn = document.getElementById('uploadBtn');
@@ -1184,6 +1209,37 @@
             await loadTeacherProfile();
             await loadStandards();
             await loadStats();
+            
+            // Add dropdown event listeners
+            document.getElementById('standard').addEventListener('change', function() {
+                const standard = this.value;
+                
+                if (standard) {
+                    loadSubjects(standard);
+                } else {
+                    document.getElementById('subject').innerHTML = '<option value="">Select standard first</option>';
+                    document.getElementById('subject').disabled = true;
+                    document.getElementById('language').innerHTML = '<option value="">Select subject first</option>';
+                    document.getElementById('language').disabled = true;
+                    document.getElementById('group').innerHTML = '<option value="">Select subject first</option>';
+                    document.getElementById('group').disabled = true;
+                }
+            });
+
+            document.getElementById('subject').addEventListener('change', function() {
+                const subject = this.value;
+                const standard = document.getElementById('standard').value;
+                
+                if (subject && standard) {
+                    loadLanguages(standard, subject);
+                    loadGroups(standard, subject);
+                } else {
+                    document.getElementById('language').innerHTML = '<option value="">Select subject first</option>';
+                    document.getElementById('language').disabled = true;
+                    document.getElementById('group').innerHTML = '<option value="">Select subject first</option>';
+                    document.getElementById('group').disabled = true;
+                }
+            });
         });
     </script>
 </body>
