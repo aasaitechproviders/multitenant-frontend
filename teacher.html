@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teacher Dashboard</title>
+    <title>Teacher Dashboard - Document Upload</title>
     <style>
         * {
             margin: 0;
@@ -219,11 +219,6 @@
             cursor: not-allowed;
         }
 
-        .btn-secondary {
-            background: #95a5a6;
-        }
-
-        /* Upload Area Styles */
         .upload-area {
             border: 2px dashed #667eea;
             border-radius: 12px;
@@ -271,6 +266,10 @@
             margin-bottom: 8px;
         }
 
+        .form-group label .required {
+            color: #e74c3c;
+        }
+
         .form-group input,
         .form-group select {
             width: 100%;
@@ -278,6 +277,11 @@
             border: 1px solid #ddd;
             border-radius: 6px;
             font-size: 14px;
+        }
+
+        .form-group input:disabled {
+            background: #f5f5f5;
+            cursor: not-allowed;
         }
 
         .form-grid {
@@ -427,7 +431,7 @@
     <div class="container">
         <div class="dashboard-header">
             <h1>Welcome, <span id="userNameTitle">Teacher</span>!</h1>
-            <p>Manage your documents and students</p>
+            <p>Upload and manage educational documents</p>
         </div>
 
         <div class="stats-grid">
@@ -436,16 +440,16 @@
                 <div class="number" id="totalDocs">0</div>
             </div>
             <div class="stat-card">
-                <h3>Processed Documents</h3>
+                <h3>Completed</h3>
                 <div class="number" id="processedDocs">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Processing</h3>
+                <div class="number" id="processingDocs">0</div>
             </div>
             <div class="stat-card">
                 <h3>Total Pages</h3>
                 <div class="number" id="totalPages">0</div>
-            </div>
-            <div class="stat-card">
-                <h3>Total Students</h3>
-                <div class="number" id="totalStudents">0</div>
             </div>
         </div>
 
@@ -477,55 +481,37 @@
                 <form id="uploadForm" style="margin-top: 30px;">
                     <div class="form-grid">
                         <div class="form-group">
-                            <label>School Name *</label>
-                            <input type="text" id="schoolNameInput" required>
+                            <label>School Name <span class="required">*</span></label>
+                            <input type="text" id="schoolNameInput" required disabled>
                         </div>
                         <div class="form-group">
-                            <label>Standard/Grade *</label>
+                            <label>Standard/Grade <span class="required">*</span></label>
                             <select id="standard" required>
-                                <option value="">Select Standard</option>
-                                <option value="1">1st Standard</option>
-                                <option value="2">2nd Standard</option>
-                                <option value="3">3rd Standard</option>
-                                <option value="4">4th Standard</option>
-                                <option value="5">5th Standard</option>
-                                <option value="6">6th Standard</option>
-                                <option value="7">7th Standard</option>
-                                <option value="8">8th Standard</option>
-                                <option value="9">9th Standard</option>
-                                <option value="10">10th Standard</option>
-                                <option value="11">11th Standard</option>
-                                <option value="12">12th Standard</option>
+                                <option value="">Loading...</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Subject *</label>
-                            <select id="subject" required>
-                                <option value="">Select Subject</option>
-                                <option value="Mathematics">Mathematics</option>
-                                <option value="Physics">Physics</option>
-                                <option value="Chemistry">Chemistry</option>
-                                <option value="Biology">Biology</option>
-                                <option value="English">English</option>
-                                <option value="Tamil">Tamil</option>
-                                <option value="Hindi">Hindi</option>
-                                <option value="Social Science">Social Science</option>
-                                <option value="Computer Science">Computer Science</option>
+                            <label>Subject <span class="required">*</span></label>
+                            <select id="subject" required disabled>
+                                <option value="">Select standard first</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Language *</label>
-                            <select id="language" required>
-                                <option value="">Select Language</option>
-                                <option value="en">English</option>
-                                <option value="ta">Tamil</option>
-                                <option value="hi">Hindi</option>
+                            <label>Language/Medium <span class="required">*</span></label>
+                            <select id="language" required disabled>
+                                <option value="">Select subject first</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Group</label>
+                            <select id="group" disabled>
+                                <option value="">Select subject first</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label>Term</label>
                             <select id="term">
-                                <option value="">Select Term</option>
+                                <option value="">Select Term (Optional)</option>
                                 <option value="1">Term 1</option>
                                 <option value="2">Term 2</option>
                                 <option value="3">Term 3</option>
@@ -536,12 +522,20 @@
                             <input type="text" id="board" placeholder="e.g., State Board, CBSE">
                         </div>
                         <div class="form-group">
+                            <label>Chapter</label>
+                            <input type="text" id="chapter" placeholder="Chapter name">
+                        </div>
+                        <div class="form-group">
+                            <label>Unit</label>
+                            <input type="text" id="unit" placeholder="Unit name">
+                        </div>
+                        <div class="form-group">
                             <label>Book Name</label>
                             <input type="text" id="bookName" placeholder="Book title">
                         </div>
                         <div class="form-group">
                             <label>Academic Year</label>
-                            <input type="text" id="academicYear" placeholder="e.g., 2024-25">
+                            <input type="text" id="academicYear" placeholder="e.g., 2024-25" value="2024-25">
                         </div>
                     </div>
 
@@ -566,37 +560,64 @@
                     <button class="btn" onclick="loadActivities()">🔄 Refresh</button>
                 </div>
                 <div id="activitiesContainer">
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📊</div>
-                        <p>No activities yet</p>
-                        <p style="font-size: 14px; margin-top: 10px;">Upload your first document to get started</p>
-                    </div>
+                    <div class="loading">Loading activities...</div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        const API_BASE_URL = 'https://zfof5qbg0m.execute-api.ap-southeast-2.amazonaws.com/PROD';
-        const LAMBDA_UPLOAD_URL = 'https://ew43dbkk9b.execute-api.ap-southeast-2.amazonaws.com/PROD/generate-upload-url';
+        // API Configuration from index.html
+        const CONFIG = {
+            API_URL: 'https://dnotflkcoj.execute-api.ap-southeast-2.amazonaws.com/prod',
+            ADMIN_API_URL: 'https://zfof5qbg0m.execute-api.ap-southeast-2.amazonaws.com/PROD',
+            LAMBDA_UPLOAD_URL: 'https://ew43dbkk9b.execute-api.ap-southeast-2.amazonaws.com/PROD/generate-upload-url'
+        };
         
         let currentUser = null;
         let selectedFile = null;
         let allDocuments = [];
+        let schoolInfo = null;
 
-        // Check authentication
+        // Extract school code from subdomain (matching index.html)
+        function getSchoolCode() {
+            const hostname = window.location.hostname;
+            
+            if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                const urlParams = new URLSearchParams(window.location.search);
+                return urlParams.get('school') || localStorage.getItem('schoolCode') || 'demo';
+            }
+            
+            const parts = hostname.split('.');
+            if (parts.length >= 4) {
+                return parts[0];
+            }
+            
+            return localStorage.getItem('schoolCode') || 'demo';
+        }
+
+        // Check authentication (matching index.html pattern)
         function checkAuth() {
             const authToken = localStorage.getItem('authToken');
             const userRole = localStorage.getItem('userRole');
+            const schoolCode = getSchoolCode();
             
             if (!authToken || userRole !== 'teacher') {
-                window.location.href = 'login.html';
+                window.location.href = 'index.html';
                 return false;
             }
+            
+            // Verify school code matches
+            if (localStorage.getItem('schoolCode') !== schoolCode) {
+                localStorage.clear();
+                window.location.href = 'index.html';
+                return false;
+            }
+            
             return true;
         }
 
-        // Get auth headers
+        // Get auth headers (matching admin/teacher Lambda pattern)
         function getAuthHeaders() {
             const sessionToken = localStorage.getItem('sessionToken');
             const schoolCode = localStorage.getItem('schoolCode');
@@ -608,11 +629,12 @@
             };
         }
 
-        // Load school branding
+        // Load school branding (matching index.html)
         async function loadSchoolBranding() {
-            const schoolCode = localStorage.getItem('schoolCode');
+            const schoolCode = getSchoolCode();
             const schoolName = localStorage.getItem('schoolName');
 
+            // Set from localStorage first
             if (schoolName) {
                 document.getElementById('navSchoolName').textContent = schoolName;
                 document.getElementById('navLogo').textContent = schoolName.charAt(0);
@@ -620,10 +642,14 @@
             }
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/school/branding/${schoolCode}`);
+                const response = await fetch(`${CONFIG.API_URL}/api/school/branding/${schoolCode}`);
+                
                 if (response.ok) {
                     const school = await response.json();
+                    schoolInfo = school;
+                    
                     document.getElementById('navSchoolName').textContent = school.name;
+                    document.getElementById('schoolNameInput').value = school.name;
                     
                     if (school.primaryColor) {
                         document.documentElement.style.setProperty('--primary-color', school.primaryColor);
@@ -638,10 +664,17 @@
             }
         }
 
-        // Load teacher profile
+        // Load teacher profile (matching pattern)
         async function loadTeacherProfile() {
+            const userName = localStorage.getItem('userName');
+            const userEmail = localStorage.getItem('userEmail');
+            
+            // Set from localStorage first
+            document.getElementById('userName').textContent = userName || userEmail || 'Teacher';
+            document.getElementById('userNameTitle').textContent = userName || 'Teacher';
+
             try {
-                const response = await fetch(`${API_BASE_URL}/user/session-info`, {
+                const response = await fetch(`${CONFIG.API_URL}/user/session-info`, {
                     headers: getAuthHeaders()
                 });
 
@@ -656,6 +689,222 @@
                 console.error('Error loading profile:', error);
             }
         }
+
+        // Load available standards from MongoDB
+        async function loadStandards() {
+            try {
+                const response = await fetch(`${CONFIG.ADMIN_API_URL}/api/documents/standards`, {
+                    headers: getAuthHeaders()
+                });
+
+                const select = document.getElementById('standard');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    select.innerHTML = '<option value="">Select Standard</option>';
+                    
+                    const standards = data.standards.length > 0 ? data.standards : 
+                        ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+                    
+                    standards.forEach(std => {
+                        const option = document.createElement('option');
+                        option.value = std;
+                        option.textContent = `Standard ${std}`;
+                        select.appendChild(option);
+                    });
+                } else {
+                    // Fallback to default
+                    loadDefaultStandards();
+                }
+                
+                select.disabled = false;
+                
+            } catch (error) {
+                console.error('Error loading standards:', error);
+                loadDefaultStandards();
+            }
+        }
+
+        function loadDefaultStandards() {
+            const select = document.getElementById('standard');
+            select.innerHTML = '<option value="">Select Standard</option>';
+            
+            for (let i = 1; i <= 12; i++) {
+                const option = document.createElement('option');
+                option.value = i.toString();
+                option.textContent = `Standard ${i}`;
+                select.appendChild(option);
+            }
+            
+            select.disabled = false;
+        }
+
+        // Load subjects based on standard
+        async function loadSubjects(standard) {
+            const select = document.getElementById('subject');
+            select.innerHTML = '<option value="">Loading...</option>';
+            select.disabled = true;
+            
+            try {
+                const response = await fetch(`${CONFIG.ADMIN_API_URL}/api/documents/subjects/${standard}`, {
+                    headers: getAuthHeaders()
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    select.innerHTML = '<option value="">Select Subject</option>';
+                    
+                    const subjects = data.subjects.length > 0 ? data.subjects : 
+                        ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'English', 'Tamil', 'Hindi', 'Social Science', 'Computer Science'];
+                    
+                    subjects.forEach(subj => {
+                        const option = document.createElement('option');
+                        option.value = subj;
+                        option.textContent = subj;
+                        select.appendChild(option);
+                    });
+                } else {
+                    loadDefaultSubjects();
+                }
+                
+                select.disabled = false;
+                
+            } catch (error) {
+                console.error('Error loading subjects:', error);
+                loadDefaultSubjects();
+            }
+        }
+
+        function loadDefaultSubjects() {
+            const select = document.getElementById('subject');
+            select.innerHTML = '<option value="">Select Subject</option>';
+            
+            const subjects = ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'English', 'Tamil', 'Hindi', 'Social Science', 'Computer Science'];
+            subjects.forEach(subj => {
+                const option = document.createElement('option');
+                option.value = subj;
+                option.textContent = subj;
+                select.appendChild(option);
+            });
+            
+            select.disabled = false;
+        }
+
+        // Load languages/mediums
+        async function loadLanguages(standard, subject) {
+            const select = document.getElementById('language');
+            select.innerHTML = '<option value="">Loading...</option>';
+            select.disabled = true;
+            
+            try {
+                const response = await fetch(`${CONFIG.ADMIN_API_URL}/api/documents/languages/${standard}/${subject}`, {
+                    headers: getAuthHeaders()
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    select.innerHTML = '<option value="">Select Language</option>';
+                    
+                    const languages = data.languages.length > 0 ? data.languages : ['en', 'ta', 'hi'];
+                    
+                    languages.forEach(lang => {
+                        const option = document.createElement('option');
+                        option.value = lang;
+                        option.textContent = lang === 'en' ? 'English' : 
+                                           lang === 'ta' ? 'Tamil' : 
+                                           lang === 'hi' ? 'Hindi' : lang;
+                        select.appendChild(option);
+                    });
+                } else {
+                    loadDefaultLanguages();
+                }
+                
+                select.disabled = false;
+                
+            } catch (error) {
+                console.error('Error loading languages:', error);
+                loadDefaultLanguages();
+            }
+        }
+
+        function loadDefaultLanguages() {
+            const select = document.getElementById('language');
+            select.innerHTML = `
+                <option value="">Select Language</option>
+                <option value="en">English</option>
+                <option value="ta">Tamil</option>
+                <option value="hi">Hindi</option>
+            `;
+            select.disabled = false;
+        }
+
+        // Load groups
+        async function loadGroups(standard, subject) {
+            const select = document.getElementById('group');
+            select.innerHTML = '<option value="">Loading...</option>';
+            select.disabled = true;
+            
+            try {
+                const response = await fetch(`${CONFIG.ADMIN_API_URL}/api/documents/groups/${standard}/${subject}`, {
+                    headers: getAuthHeaders()
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    select.innerHTML = '<option value="">No Group (Optional)</option>';
+                    
+                    data.groups.forEach(grp => {
+                        const option = document.createElement('option');
+                        option.value = grp;
+                        option.textContent = grp;
+                        select.appendChild(option);
+                    });
+                } else {
+                    select.innerHTML = '<option value="">No Group (Optional)</option>';
+                }
+                
+                select.disabled = false;
+                
+            } catch (error) {
+                console.error('Error loading groups:', error);
+                select.innerHTML = '<option value="">No Group (Optional)</option>';
+                select.disabled = false;
+            }
+        }
+
+        // Handle dropdown changes
+        document.getElementById('standard').addEventListener('change', function() {
+            const standard = this.value;
+            if (standard) {
+                loadSubjects(standard);
+            } else {
+                document.getElementById('subject').innerHTML = '<option value="">Select standard first</option>';
+                document.getElementById('subject').disabled = true;
+                document.getElementById('language').innerHTML = '<option value="">Select subject first</option>';
+                document.getElementById('language').disabled = true;
+                document.getElementById('group').innerHTML = '<option value="">Select subject first</option>';
+                document.getElementById('group').disabled = true;
+            }
+        });
+
+        document.getElementById('subject').addEventListener('change', function() {
+            const subject = this.value;
+            const standard = document.getElementById('standard').value;
+            
+            if (subject && standard) {
+                loadLanguages(standard, subject);
+                loadGroups(standard, subject);
+            } else {
+                document.getElementById('language').innerHTML = '<option value="">Select subject first</option>';
+                document.getElementById('language').disabled = true;
+                document.getElementById('group').innerHTML = '<option value="">Select subject first</option>';
+                document.getElementById('group').disabled = true;
+            }
+        });
 
         // File upload handlers
         const uploadArea = document.getElementById('uploadArea');
@@ -732,14 +981,17 @@
                 language: document.getElementById('language').value,
                 term: document.getElementById('term').value,
                 grade: document.getElementById('standard').value,
+                group: document.getElementById('group').value,
                 board: document.getElementById('board').value.trim(),
+                chapter: document.getElementById('chapter').value.trim(),
+                unit: document.getElementById('unit').value.trim(),
                 book_name: document.getElementById('bookName').value.trim(),
                 academic_year: document.getElementById('academicYear').value.trim(),
                 original_filename: selectedFile.name
             };
 
             if (!metadata.school_name || !metadata.standard || !metadata.subject || !metadata.language) {
-                showStatus('Please fill all required fields', 'error');
+                showStatus('Please fill all required fields (School, Standard, Subject, Language)', 'error');
                 return;
             }
 
@@ -750,7 +1002,7 @@
                 showStatus('Getting upload URL...', 'info');
                 showProgress(10);
 
-                const response1 = await fetch(LAMBDA_UPLOAD_URL, {
+                const response1 = await fetch(CONFIG.LAMBDA_UPLOAD_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -782,7 +1034,7 @@
 
                 showProgress(100);
                 showStatus(
-                    `✅ Document uploaded successfully!<br>Batch ID: ${data.batch_upload_id}`,
+                    `✅ Document uploaded successfully!<br>Batch ID: ${data.batch_upload_id}<br>The document is now being processed.`,
                     'success'
                 );
 
@@ -791,8 +1043,17 @@
                 document.getElementById('selectedFileInfo').style.display = 'none';
                 uploadBtn.disabled = true;
                 uploadBtn.textContent = 'Upload Document';
+                
+                // Reset dropdowns
+                document.getElementById('subject').innerHTML = '<option value="">Select standard first</option>';
+                document.getElementById('subject').disabled = true;
+                document.getElementById('language').innerHTML = '<option value="">Select subject first</option>';
+                document.getElementById('language').disabled = true;
+                document.getElementById('group').innerHTML = '<option value="">Select subject first</option>';
+                document.getElementById('group').disabled = true;
 
                 loadStats();
+                loadActivities();
 
             } catch (error) {
                 console.error('Upload error:', error);
@@ -818,27 +1079,84 @@
             if (type === 'success' || type === 'error') {
                 setTimeout(() => {
                     statusMessage.style.display = 'none';
-                }, 5000);
+                }, 10000);
             }
         }
 
-        function loadStats() {
-            // Placeholder - will be updated with real data from MongoDB
-            document.getElementById('totalDocs').textContent = '0';
-            document.getElementById('processedDocs').textContent = '0';
-            document.getElementById('totalPages').textContent = '0';
-            document.getElementById('totalStudents').textContent = '0';
+        // Load statistics
+        async function loadStats() {
+            try {
+                const response = await fetch(`${CONFIG.ADMIN_API_URL}/api/teacher/documents`, {
+                    headers: getAuthHeaders()
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    allDocuments = data.documents;
+                    
+                    document.getElementById('totalDocs').textContent = data.stats.total;
+                    document.getElementById('processedDocs').textContent = data.stats.completed;
+                    document.getElementById('processingDocs').textContent = data.stats.processing;
+                    document.getElementById('totalPages').textContent = data.stats.totalPages;
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
         }
 
-        function loadActivities() {
+        // Load activities
+        async function loadActivities() {
             const container = document.getElementById('activitiesContainer');
-            container.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon">📊</div>
-                    <p>No activities yet</p>
-                    <p style="font-size: 14px; margin-top: 10px;">Upload your first document to get started</p>
-                </div>
-            `;
+            
+            try {
+                if (allDocuments.length === 0) {
+                    await loadStats();
+                }
+                
+                if (allDocuments.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📊</div>
+                            <p>No documents uploaded yet</p>
+                            <p style="font-size: 14px; margin-top: 10px;">Upload your first document to get started</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = '<table><thead><tr>';
+                html += '<th>Date</th>';
+                html += '<th>Document</th>';
+                html += '<th>Subject</th>';
+                html += '<th>Standard</th>';
+                html += '<th>Pages</th>';
+                html += '<th>Status</th>';
+                html += '</tr></thead><tbody>';
+
+                allDocuments.forEach(doc => {
+                    const date = new Date(doc.created_at).toLocaleDateString();
+                    const statusClass = doc.status === 'completed' ? 'success' : 
+                                      doc.status === 'failed' ? 'error' : 'processing';
+                    
+                    html += `
+                        <tr>
+                            <td>${date}</td>
+                            <td>${doc.original_filename || 'Unknown'}</td>
+                            <td>${doc.subject || '-'}</td>
+                            <td>${doc.standard || '-'}</td>
+                            <td>${doc.page_count || 0}</td>
+                            <td><span class="badge badge-${statusClass}">${doc.status}</span></td>
+                        </tr>
+                    `;
+                });
+
+                html += '</tbody></table>';
+                container.innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading activities:', error);
+                container.innerHTML = '<div class="empty-state"><p>Error loading activities</p></div>';
+            }
         }
 
         function switchTab(tabName) {
@@ -855,15 +1173,17 @@
 
         document.getElementById('logoutBtn').addEventListener('click', () => {
             localStorage.clear();
-            window.location.href = 'login.html';
+            window.location.href = 'index.html';
         });
 
+        // Initialize
         window.addEventListener('DOMContentLoaded', async () => {
             if (!checkAuth()) return;
             
             await loadSchoolBranding();
             await loadTeacherProfile();
-            loadStats();
+            await loadStandards();
+            await loadStats();
         });
     </script>
 </body>
