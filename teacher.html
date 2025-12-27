@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teacher Dashboard - Document Management</title>
+    <title>Teacher Dashboard</title>
     <style>
         * {
             margin: 0;
@@ -158,11 +158,6 @@
             padding: 25px;
             border-radius: 12px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
         }
 
         .stat-card h3 {
@@ -175,11 +170,6 @@
             font-size: 32px;
             font-weight: 700;
             color: var(--primary-color, #667eea);
-        }
-
-        .stat-card .icon {
-            font-size: 40px;
-            margin-bottom: 10px;
         }
 
         .card {
@@ -195,9 +185,6 @@
             font-weight: 600;
             color: #333;
             margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
         }
 
         .upload-area {
@@ -215,25 +202,9 @@
             border-color: #5568d3;
         }
 
-        .upload-area.dragover {
-            background: #e8ecff;
-            border-color: #5568d3;
-        }
-
         .upload-icon {
             font-size: 48px;
             margin-bottom: 20px;
-        }
-
-        .upload-text {
-            font-size: 16px;
-            color: #333;
-            margin-bottom: 10px;
-        }
-
-        .upload-subtext {
-            font-size: 14px;
-            color: #666;
         }
 
         .file-input {
@@ -276,26 +247,15 @@
             cursor: pointer;
             font-size: 14px;
             font-weight: 500;
-            transition: all 0.3s;
         }
 
         .btn:hover {
             opacity: 0.9;
-            transform: translateY(-2px);
         }
 
         .btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
-            transform: none;
-        }
-
-        .btn-success {
-            background: #27ae60;
-        }
-
-        .btn-danger {
-            background: #e74c3c;
         }
 
         .progress-bar {
@@ -325,79 +285,16 @@
         .status-success {
             background: #d4edda;
             color: #155724;
-            border: 1px solid #c3e6cb;
         }
 
         .status-error {
             background: #f8d7da;
             color: #721c24;
-            border: 1px solid #f5c6cb;
         }
 
         .status-info {
             background: #d1ecf1;
             color: #0c5460;
-            border: 1px solid #bee5eb;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        thead {
-            background: #f8f9fa;
-        }
-
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #e0e0e0;
-        }
-
-        th {
-            font-weight: 600;
-            color: #333;
-            font-size: 14px;
-        }
-
-        td {
-            color: #666;
-            font-size: 14px;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-
-        .badge-success {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .badge-processing {
-            background: #fff3cd;
-            color: #856404;
-        }
-
-        .badge-error {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #999;
-        }
-
-        .empty-state-icon {
-            font-size: 64px;
-            margin-bottom: 20px;
         }
 
         .loading {
@@ -405,47 +302,13 @@
             padding: 20px;
             color: #666;
         }
-
-        .loading::after {
-            content: '...';
-            animation: dots 1.5s infinite;
-        }
-
-        @keyframes dots {
-            0%, 20% { content: '.'; }
-            40% { content: '..'; }
-            60%, 100% { content: '...'; }
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .container {
-                padding: 0 15px;
-            }
-
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .tabs {
-                overflow-x: auto;
-            }
-        }
     </style>
 </head>
 <body>
-    <!-- Navbar -->
     <div class="navbar">
         <div class="navbar-brand">
-            <div class="school-logo-small" id="schoolLogo">
-                <img src="" alt="School Logo" style="display: none;" id="schoolLogoImg">
-                <span id="schoolLogoText">S</span>
-            </div>
-            <div class="school-name" id="schoolName">Loading...</div>
+            <div class="school-logo-small" id="navLogo">S</div>
+            <span class="school-name" id="navSchoolName">School Portal</span>
         </div>
         <div class="navbar-user">
             <div class="user-info">
@@ -456,159 +319,107 @@
         </div>
     </div>
 
-    <!-- Main Container -->
     <div class="container">
-        <!-- Dashboard Header -->
         <div class="dashboard-header">
-            <h1>Welcome back, <span id="teacherName">Teacher</span>!</h1>
-            <p>Manage your documents and track student progress</p>
+            <h1>Welcome, <span id="userNameTitle">Teacher</span>!</h1>
+            <p>Upload educational documents and manage content</p>
         </div>
 
-        <!-- Tabs -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>📄 Total Documents</h3>
+                <div class="number" id="totalDocs">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>✅ Processed</h3>
+                <div class="number" id="processedDocs">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>⏳ Processing</h3>
+                <div class="number" id="processingDocs">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>📊 Total Pages</h3>
+                <div class="number" id="totalPages">0</div>
+            </div>
+        </div>
+
         <div class="tabs">
             <button class="tab active" onclick="switchTab('upload')">📤 Upload Documents</button>
             <button class="tab" onclick="switchTab('activities')">📊 My Activities</button>
-            <button class="tab" onclick="switchTab('documents')">📚 All Documents</button>
         </div>
 
         <!-- Upload Tab -->
         <div id="upload-tab" class="tab-content active">
-            <!-- Stats -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="icon">📄</div>
-                    <h3>Total Documents</h3>
-                    <div class="number" id="totalDocs">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="icon">✅</div>
-                    <h3>Processed</h3>
-                    <div class="number" id="processedDocs">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="icon">⏳</div>
-                    <h3>Processing</h3>
-                    <div class="number" id="processingDocs">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="icon">📊</div>
-                    <h3>Total Pages</h3>
-                    <div class="number" id="totalPages">0</div>
-                </div>
-            </div>
-
-            <!-- Upload Card -->
             <div class="card">
-                <div class="card-title">
-                    <span>📤 Upload New Document</span>
-                </div>
+                <div class="card-title">📤 Upload New Document</div>
 
-                <!-- Upload Area -->
                 <div class="upload-area" id="uploadArea">
                     <div class="upload-icon">📁</div>
-                    <div class="upload-text">Drag and drop your file here</div>
-                    <div class="upload-subtext">or click to browse (PDF, DOC, DOCX - Max 100MB)</div>
+                    <div>Drag and drop your file here or click to browse</div>
+                    <div style="font-size: 14px; color: #666; margin-top: 10px;">PDF, DOC, DOCX - Max 100MB</div>
                     <input type="file" id="fileInput" class="file-input" accept=".pdf,.doc,.docx">
                 </div>
 
-                <!-- Selected File Info -->
                 <div id="selectedFileInfo" style="display: none; margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 6px;">
                     <strong>Selected File:</strong>
                     <div id="fileName" style="margin-top: 5px; color: #666;"></div>
                     <div id="fileSize" style="margin-top: 5px; color: #666; font-size: 13px;"></div>
                 </div>
 
-                <!-- Metadata Form -->
                 <form id="uploadForm" style="margin-top: 30px;">
                     <div class="form-grid">
                         <div class="form-group">
                             <label>School Name *</label>
-                            <input type="text" id="schoolNameInput" required placeholder="Enter school name">
+                            <input type="text" id="schoolNameInput" required>
                         </div>
                         <div class="form-group">
-                            <label>Standard/Grade *</label>
+                            <label>Standard *</label>
                             <select id="standard" required>
-                                <option value="">Select Standard</option>
-                                <option value="1">1st Standard</option>
-                                <option value="2">2nd Standard</option>
-                                <option value="3">3rd Standard</option>
-                                <option value="4">4th Standard</option>
-                                <option value="5">5th Standard</option>
-                                <option value="6">6th Standard</option>
-                                <option value="7">7th Standard</option>
-                                <option value="8">8th Standard</option>
-                                <option value="9">9th Standard</option>
-                                <option value="10">10th Standard</option>
-                                <option value="11">11th Standard</option>
-                                <option value="12">12th Standard</option>
+                                <option value="">Select</option>
+                                <option value="1">1st</option>
+                                <option value="2">2nd</option>
+                                <option value="3">3rd</option>
+                                <option value="4">4th</option>
+                                <option value="5">5th</option>
+                                <option value="6">6th</option>
+                                <option value="7">7th</option>
+                                <option value="8">8th</option>
+                                <option value="9">9th</option>
+                                <option value="10">10th</option>
+                                <option value="11">11th</option>
+                                <option value="12">12th</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label>Subject *</label>
                             <select id="subject" required>
-                                <option value="">Select Subject</option>
+                                <option value="">Select</option>
                                 <option value="Mathematics">Mathematics</option>
                                 <option value="Physics">Physics</option>
                                 <option value="Chemistry">Chemistry</option>
                                 <option value="Biology">Biology</option>
                                 <option value="English">English</option>
                                 <option value="Tamil">Tamil</option>
-                                <option value="Hindi">Hindi</option>
-                                <option value="Social Science">Social Science</option>
-                                <option value="Computer Science">Computer Science</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Language/Medium *</label>
+                            <label>Language *</label>
                             <select id="language" required>
-                                <option value="">Select Language</option>
+                                <option value="">Select</option>
                                 <option value="en">English</option>
                                 <option value="ta">Tamil</option>
-                                <option value="hi">Hindi</option>
                             </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Term</label>
-                            <select id="term">
-                                <option value="">Select Term</option>
-                                <option value="1">Term 1</option>
-                                <option value="2">Term 2</option>
-                                <option value="3">Term 3</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Board</label>
-                            <input type="text" id="board" placeholder="e.g., State Board, CBSE">
-                        </div>
-                        <div class="form-group">
-                            <label>Chapter</label>
-                            <input type="text" id="chapter" placeholder="Chapter name">
-                        </div>
-                        <div class="form-group">
-                            <label>Unit</label>
-                            <input type="text" id="unit" placeholder="Unit name">
-                        </div>
-                        <div class="form-group">
-                            <label>Book Name</label>
-                            <input type="text" id="bookName" placeholder="Book title">
-                        </div>
-                        <div class="form-group">
-                            <label>Academic Year</label>
-                            <input type="text" id="academicYear" placeholder="e.g., 2024-25">
                         </div>
                     </div>
 
-                    <button type="submit" class="btn" id="uploadBtn" disabled>
-                        Upload Document
-                    </button>
+                    <button type="submit" class="btn" id="uploadBtn" disabled>Upload Document</button>
                 </form>
 
-                <!-- Progress Bar -->
                 <div class="progress-bar" id="progressBar">
                     <div class="progress-fill" id="progressFill"></div>
                 </div>
 
-                <!-- Status Message -->
                 <div class="status-message" id="statusMessage"></div>
             </div>
         </div>
@@ -616,25 +427,9 @@
         <!-- Activities Tab -->
         <div id="activities-tab" class="tab-content">
             <div class="card">
-                <div class="card-title">
-                    <span>📊 My Upload Activities</span>
-                    <button class="btn" onclick="loadActivities()">🔄 Refresh</button>
-                </div>
+                <div class="card-title">📊 My Upload Activities</div>
                 <div id="activitiesContainer">
-                    <div class="loading">Loading activities</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Documents Tab -->
-        <div id="documents-tab" class="tab-content">
-            <div class="card">
-                <div class="card-title">
-                    <span>📚 All Uploaded Documents</span>
-                    <button class="btn" onclick="loadDocuments()">🔄 Refresh</button>
-                </div>
-                <div id="documentsContainer">
-                    <div class="loading">Loading documents</div>
+                    <div class="loading">No activities yet. Upload your first document!</div>
                 </div>
             </div>
         </div>
@@ -642,18 +437,18 @@
 
     <script>
         // Configuration
-        const API_BASE_URL = 'https://ew43dbkk9b.execute-api.ap-southeast-2.amazonaws.com/PROD';
+        const API_BASE_URL = 'https://zfof5qbg0m.execute-api.ap-southeast-2.amazonaws.com/PROD';
         const LAMBDA_UPLOAD_URL = 'https://ew43dbkk9b.execute-api.ap-southeast-2.amazonaws.com/PROD/generate-upload-url';
-
-        // Global variables
-        let selectedFile = null;
+        
         let currentUser = null;
-        let allDocuments = [];
+        let selectedFile = null;
 
-        // Auth check
+        // Auth functions
         function checkAuth() {
-            const token = localStorage.getItem('token');
-            if (!token) {
+            const authToken = localStorage.getItem('authToken');
+            const userRole = localStorage.getItem('userRole');
+            
+            if (!authToken || userRole !== 'teacher') {
                 window.location.href = 'login.html';
                 return false;
             }
@@ -661,35 +456,39 @@
         }
 
         function getAuthHeaders() {
+            const sessionToken = localStorage.getItem('sessionToken');
+            const schoolCode = localStorage.getItem('schoolCode');
+            
             return {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                'Authorization': `Bearer ${sessionToken}`,
+                'X-School-ID': schoolCode
             };
         }
 
-        // Load user profile
-        async function loadTeacherProfile() {
-            try {
-                // For now, use localStorage data
-                const userStr = localStorage.getItem('user');
-                if (userStr) {
-                    currentUser = JSON.parse(userStr);
-                    document.getElementById('userName').textContent = currentUser.name || currentUser.email;
-                    document.getElementById('teacherName').textContent = currentUser.name || 'Teacher';
-                    document.getElementById('schoolNameInput').value = currentUser.schoolName || '';
-                }
-            } catch (error) {
-                console.error('Error loading profile:', error);
+        // Load functions
+        async function loadSchoolBranding() {
+            const schoolName = localStorage.getItem('schoolName');
+            if (schoolName) {
+                document.getElementById('navSchoolName').textContent = schoolName;
+                document.getElementById('schoolNameInput').value = schoolName.replace(/ /g, '_');
             }
         }
 
-        // Load school branding
-        async function loadSchoolBranding() {
+        async function loadTeacherProfile() {
             try {
-                // For now, use default
-                document.getElementById('schoolName').textContent = 'Aasai School';
+                const response = await fetch(`${API_BASE_URL}/user/session-info`, {
+                    headers: getAuthHeaders()
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    currentUser = data.user;
+                    document.getElementById('userName').textContent = currentUser.name || currentUser.email;
+                    document.getElementById('userNameTitle').textContent = currentUser.name || 'Teacher';
+                }
             } catch (error) {
-                console.error('Error loading school branding:', error);
+                console.error('Error loading profile:', error);
             }
         }
 
@@ -703,20 +502,18 @@
 
         uploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
-            uploadArea.classList.add('dragover');
+            uploadArea.style.background = '#e8ecff';
         });
 
         uploadArea.addEventListener('dragleave', () => {
-            uploadArea.classList.remove('dragover');
+            uploadArea.style.background = '#f8f9ff';
         });
 
         uploadArea.addEventListener('drop', (e) => {
             e.preventDefault();
-            uploadArea.classList.remove('dragover');
-            
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                handleFileSelect(files[0]);
+            uploadArea.style.background = '#f8f9ff';
+            if (e.dataTransfer.files.length > 0) {
+                handleFileSelect(e.dataTransfer.files[0]);
             }
         });
 
@@ -727,113 +524,72 @@
         });
 
         function handleFileSelect(file) {
-            // Validate file type
             const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+            
             if (!allowedTypes.includes(file.type)) {
                 showStatus('Please select a PDF, DOC, or DOCX file', 'error');
                 return;
             }
 
-            // Validate file size (100MB)
             if (file.size > 100 * 1024 * 1024) {
                 showStatus('File size must be less than 100MB', 'error');
                 return;
             }
 
             selectedFile = file;
-
-            // Show file info
             document.getElementById('selectedFileInfo').style.display = 'block';
             document.getElementById('fileName').textContent = file.name;
             document.getElementById('fileSize').textContent = `Size: ${(file.size / 1024 / 1024).toFixed(2)} MB`;
-
-            // Enable upload button
             uploadBtn.disabled = false;
-
-            // Auto-fill filename
-            const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
-            if (!document.getElementById('bookName').value) {
-                document.getElementById('bookName').value = nameWithoutExt;
-            }
         }
 
-        // Upload form submission
         uploadForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
             if (!selectedFile) {
-                showStatus('Please select a file first', 'error');
+                showStatus('Please select a file', 'error');
                 return;
             }
 
-            // Gather metadata
             const metadata = {
                 school_name: document.getElementById('schoolNameInput').value.trim(),
                 standard: document.getElementById('standard').value,
                 subject: document.getElementById('subject').value,
                 language: document.getElementById('language').value,
-                term: document.getElementById('term').value,
-                grade: document.getElementById('standard').value, // Same as standard
-                board: document.getElementById('board').value.trim(),
-                chapter: document.getElementById('chapter').value.trim(),
-                unit: document.getElementById('unit').value.trim(),
-                book_name: document.getElementById('bookName').value.trim(),
-                academic_year: document.getElementById('academicYear').value.trim(),
+                grade: document.getElementById('standard').value,
                 original_filename: selectedFile.name
             };
-
-            // Validate required fields
-            if (!metadata.school_name || !metadata.standard || !metadata.subject || !metadata.language) {
-                showStatus('Please fill all required fields (School Name, Standard, Subject, Language)', 'error');
-                return;
-            }
 
             try {
                 uploadBtn.disabled = true;
                 uploadBtn.textContent = 'Uploading...';
-                
                 showStatus('Getting upload URL...', 'info');
                 showProgress(10);
 
                 // Step 1: Get pre-signed URL
                 const response1 = await fetch(LAMBDA_UPLOAD_URL, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ metadata })
                 });
 
-                if (!response1.ok) {
-                    throw new Error('Failed to get upload URL');
-                }
+                if (!response1.ok) throw new Error('Failed to get upload URL');
 
                 const data = await response1.json();
-                console.log('✅ Got upload URL:', data);
-
                 showProgress(30);
                 showStatus('Uploading file to S3...', 'info');
 
-                // Step 2: Upload file to S3
+                // Step 2: Upload to S3
                 const response2 = await fetch(data.upload_url, {
                     method: 'PUT',
                     body: selectedFile,
-                    headers: {
-                        'Content-Type': selectedFile.type
-                    }
+                    headers: { 'Content-Type': selectedFile.type }
                 });
 
-                if (!response2.ok) {
-                    throw new Error('Failed to upload file to S3');
-                }
+                if (!response2.ok) throw new Error('Failed to upload to S3');
 
                 showProgress(100);
-                showStatus(
-                    `✅ Document uploaded successfully!<br>` +
-                    `Batch ID: ${data.batch_upload_id}<br>` +
-                    `The document is now being processed. Check "My Activities" tab for status.`,
-                    'success'
-                );
+                showStatus(`✅ Upload successful! Batch ID: ${data.batch_upload_id}`, 'success');
 
                 // Reset form
                 uploadForm.reset();
@@ -841,9 +597,6 @@
                 document.getElementById('selectedFileInfo').style.display = 'none';
                 uploadBtn.disabled = true;
                 uploadBtn.textContent = 'Upload Document';
-
-                // Refresh stats
-                loadStats();
 
             } catch (error) {
                 console.error('Upload error:', error);
@@ -854,10 +607,8 @@
         });
 
         function showProgress(percent) {
-            const progressBar = document.getElementById('progressBar');
-            const progressFill = document.getElementById('progressFill');
-            progressBar.style.display = 'block';
-            progressFill.style.width = percent + '%';
+            document.getElementById('progressBar').style.display = 'block';
+            document.getElementById('progressFill').style.width = percent + '%';
         }
 
         function showStatus(message, type) {
@@ -865,136 +616,15 @@
             statusMessage.className = `status-message status-${type}`;
             statusMessage.innerHTML = message;
             statusMessage.style.display = 'block';
-
-            if (type === 'success' || type === 'error') {
-                setTimeout(() => {
-                    statusMessage.style.display = 'none';
-                }, 5000);
-            }
         }
 
-        // Load statistics
-        async function loadStats() {
-            try {
-                // TODO: Replace with actual API call to MongoDB
-                // For now, show placeholder data
-                document.getElementById('totalDocs').textContent = allDocuments.length;
-                
-                const processed = allDocuments.filter(d => d.status === 'completed').length;
-                const processing = allDocuments.filter(d => d.status === 'processing' || d.status === 'images_uploaded').length;
-                const totalPages = allDocuments.reduce((sum, d) => sum + (d.page_count || 0), 0);
-
-                document.getElementById('processedDocs').textContent = processed;
-                document.getElementById('processingDocs').textContent = processing;
-                document.getElementById('totalPages').textContent = totalPages;
-
-            } catch (error) {
-                console.error('Error loading stats:', error);
-            }
-        }
-
-        // Load activities
-        async function loadActivities() {
-            const container = document.getElementById('activitiesContainer');
-            container.innerHTML = '<div class="loading">Loading activities</div>';
-
-            try {
-                // TODO: Replace with actual MongoDB query
-                // For now, show placeholder
-                if (allDocuments.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-state-icon">📊</div>
-                            <p>No activities yet</p>
-                            <p style="font-size: 14px; margin-top: 10px;">Upload your first document to get started</p>
-                        </div>
-                    `;
-                    return;
-                }
-
-                let html = '<table><thead><tr>';
-                html += '<th>Date</th>';
-                html += '<th>Document</th>';
-                html += '<th>Subject</th>';
-                html += '<th>Standard</th>';
-                html += '<th>Pages</th>';
-                html += '<th>Status</th>';
-                html += '</tr></thead><tbody>';
-
-                allDocuments.forEach(doc => {
-                    const date = new Date(doc.created_at).toLocaleDateString();
-                    const status = doc.status === 'completed' ? 'success' : 
-                                 doc.status === 'failed' ? 'error' : 'processing';
-                    
-                    html += `
-                        <tr>
-                            <td>${date}</td>
-                            <td>${doc.original_filename || 'Unknown'}</td>
-                            <td>${doc.subject || '-'}</td>
-                            <td>${doc.standard || '-'}</td>
-                            <td>${doc.page_count || 0}</td>
-                            <td><span class="badge badge-${status}">${doc.status}</span></td>
-                        </tr>
-                    `;
-                });
-
-                html += '</tbody></table>';
-                container.innerHTML = html;
-
-            } catch (error) {
-                console.error('Error loading activities:', error);
-                container.innerHTML = '<div class="empty-state"><p>Error loading activities</p></div>';
-            }
-        }
-
-        // Load all documents
-        async function loadDocuments() {
-            const container = document.getElementById('documentsContainer');
-            container.innerHTML = '<div class="loading">Loading documents</div>';
-
-            try {
-                // TODO: Replace with actual MongoDB API call
-                // Mock data for now
-                allDocuments = [
-                    {
-                        batch_upload_id: '123-abc',
-                        original_filename: 'Math_Grade10.pdf',
-                        subject: 'Mathematics',
-                        standard: '10',
-                        language: 'en',
-                        page_count: 288,
-                        status: 'completed',
-                        created_at: new Date().toISOString(),
-                        successful_pages: 273,
-                        failed_pages: 15
-                    }
-                ];
-
-                loadStats();
-                loadActivities();
-
-            } catch (error) {
-                console.error('Error loading documents:', error);
-                container.innerHTML = '<div class="empty-state"><p>Error loading documents</p></div>';
-            }
-        }
-
-        // Switch tabs
         function switchTab(tabName) {
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-
             event.target.classList.add('active');
             document.getElementById(`${tabName}-tab`).classList.add('active');
-
-            if (tabName === 'activities') {
-                loadActivities();
-            } else if (tabName === 'documents') {
-                loadDocuments();
-            }
         }
 
-        // Logout
         document.getElementById('logoutBtn').addEventListener('click', () => {
             localStorage.clear();
             window.location.href = 'login.html';
@@ -1003,11 +633,8 @@
         // Initialize
         window.addEventListener('DOMContentLoaded', async () => {
             if (!checkAuth()) return;
-            
             await loadSchoolBranding();
             await loadTeacherProfile();
-            await loadDocuments();
-            loadStats();
         });
     </script>
 </body>
