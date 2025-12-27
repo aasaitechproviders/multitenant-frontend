@@ -1026,6 +1026,9 @@
                 return;
             }
 
+            // ✅ UPDATED: Added uploaded_by field with user email
+            const userEmail = localStorage.getItem('userEmail') || currentUser?.email || 'unknown';
+            
             const metadata = {
                 school_name: document.getElementById('schoolNameInput').value.trim(),
                 standard: document.getElementById('standard').value,
@@ -1039,8 +1042,11 @@
                 unit: document.getElementById('unit').value.trim(),
                 book_name: document.getElementById('bookName').value.trim(),
                 academic_year: document.getElementById('academicYear').value.trim(),
-                original_filename: selectedFile.name
+                original_filename: selectedFile.name,
+                uploaded_by: userEmail  // ✅ NEW: Track who uploaded the document
             };
+
+            console.log('📤 Uploading with metadata:', metadata);
 
             if (!metadata.school_name || !metadata.standard || !metadata.subject || !metadata.language) {
                 showStatus('Please fill all required fields (School, Standard, Subject, Language)', 'error');
