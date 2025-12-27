@@ -621,6 +621,73 @@
                 </div>
             </div>
 
+            <!-- ✅ NEW: Document Activities Stats -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">📚 Document Upload Activities</h2>
+                    <button class="btn btn-primary" onclick="loadActivitiesStats()">
+                        <span>🔄</span>
+                        <span>Refresh</span>
+                    </button>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="total-activities">0</div>
+                        <div class="stat-label">Total Documents</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="today-activities">0</div>
+                        <div class="stat-label">Uploaded Today</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="week-activities">0</div>
+                        <div class="stat-label">Last 7 Days</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="month-activities">0</div>
+                        <div class="stat-label">Last 30 Days</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ✅ NEW: Recent Activities Table -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">📋 Recent Upload Activities</h2>
+                    <button class="btn btn-secondary" onclick="loadActivities()">
+                        <span>🔄</span>
+                        <span>Refresh</span>
+                    </button>
+                </div>
+
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Document</th>
+                                <th>Subject</th>
+                                <th>Standard</th>
+                                <th>Uploaded By</th>
+                                <th>Pages</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="activities-table-body">
+                            <tr>
+                                <td colspan="7">
+                                    <div class="empty-state">
+                                        <div class="empty-state-icon">📚</div>
+                                        <div class="empty-state-text">No upload activities yet</div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- Teachers Management -->
             <div class="card">
                 <div class="card-header">
@@ -752,6 +819,7 @@
             schoolCode: null,
             teachers: [],
             students: [],
+            activities: [],  // ✅ NEW
             deleteUserId: null,
             deleteUserType: null
         };
@@ -813,7 +881,9 @@
             await Promise.all([
                 loadTeachers(),
                 loadStudents(),
-                loadStats()
+                loadStats(),
+                loadActivitiesStats(),  // ✅ NEW
+                loadActivities()  // ✅ NEW
             ]);
         }
 
@@ -956,6 +1026,100 @@
                     </td>
                 </tr>
             `).join('');
+        }
+
+        // ✅ NEW: Load Activities Stats
+        async function loadActivitiesStats() {
+            try {
+                console.log('📈 Fetching activities stats...');
+                const response = await fetch(`${CONFIG.ADMIN_API_URL}/admin/activities/stats`, {
+                    headers: getAuthHeaders()
+                });
+
+                if (!response.ok) {
+                    console.warn('⚠️ Activities stats API failed');
+                    return;
+                }
+
+                const stats = await response.json();
+                console.log('✅ Activities stats:', stats);
+                
+                document.getElementById('total-activities').textContent = stats.totalActivities || 0;
+                document.getElementById('today-activities').textContent = stats.todayActivities || 0;
+                document.getElementById('week-activities').textContent = stats.weekActivities || 0;
+                document.getElementById('month-activities').textContent = stats.monthActivities || 0;
+                
+            } catch (error) {
+                console.error('❌ Activities stats error:', error);
+            }
+        }
+
+        // ✅ NEW: Load Activities
+        async function loadActivities() {
+            try {
+                console.log('📋 Fetching activities...');
+                const response = await fetch(`${CONFIG.ADMIN_API_URL}/admin/activities`, {
+                    headers: getAuthHeaders()
+                });
+
+                if (!response.ok) {
+                    console.warn('⚠️ Activities API failed');
+                    return;
+                }
+
+                const data = await response.json();
+                state.activities = data.activities || [];
+                console.log(`✅ Loaded ${state.activities.length} activities`);
+                displayActivities(state.activities);
+                
+            } catch (error) {
+                console.error('❌ Activities error:', error);
+            }
+        }
+
+        // ✅ NEW: Display Activities
+        function displayActivities(activities) {
+            const tbody = document.getElementById('activities-table-body');
+
+            if (activities.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">📚</div>
+                                <div class="empty-state-text">No upload activities yet</div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = activities.map(activity => {
+                const date = new Date(activity.created_at);
+                const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                
+                let statusBadge = '';
+                if (activity.status === 'completed') {
+                    statusBadge = '<span class="badge badge-success">Completed</span>';
+                } else if (activity.status === 'failed') {
+                    statusBadge = '<span class="badge badge-danger">Failed</span>';
+                } else {
+                    statusBadge = '<span class="badge badge-warning">Processing</span>';
+                }
+                
+                return `
+                    <tr>
+                        <td>${dateStr}</td>
+                        <td>${escapeHtml(activity.original_filename)}</td>
+                        <td>${escapeHtml(activity.subject)}</td>
+                        <td>${escapeHtml(activity.standard)}</td>
+                        <td>${escapeHtml(activity.uploaded_by)}</td>
+                        <td>${activity.page_count || 0}</td>
+                        <td>${statusBadge}</td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         function openAddTeacherModal() {
@@ -1127,6 +1291,8 @@
         window.deleteUser = deleteUser;
         window.closeDeleteModal = closeDeleteModal;
         window.confirmDelete = confirmDelete;
+        window.loadActivitiesStats = loadActivitiesStats;  // ✅ NEW
+        window.loadActivities = loadActivities;  // ✅ NEW
     </script>
 </body>
 </html>
