@@ -621,13 +621,12 @@
         function getAuthHeaders() {
             const sessionToken = localStorage.getItem('sessionToken');
             const schoolCode = localStorage.getItem('schoolCode');
-            const userEmail = localStorage.getItem('userEmail');
             
             return {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${sessionToken}`,
-                'X-School-ID': schoolCode,
-                'X-User-Email': userEmail || 'unknown'  // ✅ ADDED: Send teacher email
+                'X-School-ID': schoolCode
+                // ✅ REMOVED: X-User-Email (now sent in request body)
             };
         }
 
@@ -1150,8 +1149,13 @@
                 console.log('   API URL:', `${CONFIG.ADMIN_API_URL}/api/teacher/documents`);
                 console.log('   User Email:', localStorage.getItem('userEmail'));
                 
+                // ✅ UPDATED: POST request with email in body
                 const response = await fetch(`${CONFIG.ADMIN_API_URL}/api/teacher/documents`, {
-                    headers: getAuthHeaders()
+                    method: 'POST',  // ✅ Changed from GET to POST
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        userEmail: localStorage.getItem('userEmail') || currentUser?.email || 'unknown'
+                    })
                 });
 
                 console.log('   Response status:', response.status);
