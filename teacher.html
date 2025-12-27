@@ -768,19 +768,33 @@
             try {
                 console.log(`📚 Loading subjects for standard ${standard}...`);
                 
-                const response = await fetch(`${CONFIG.ADMIN_API_URL}/api/documents/subjects/${standard}`, {
-                    headers: getAuthHeaders()
-                });
+                const url = `${CONFIG.ADMIN_API_URL}/api/documents/subjects/${standard}`;
+                console.log(`📡 API URL: ${url}`);
+                
+                const headers = getAuthHeaders();
+                console.log(`📡 Headers:`, headers);
+                
+                const response = await fetch(url, { headers });
+                
+                console.log(`📡 Response status: ${response.status}`);
 
                 if (!response.ok) {
-                    throw new Error('Failed to fetch subjects');
+                    const errorText = await response.text();
+                    console.error(`❌ API Error (${response.status}):`, errorText);
+                    throw new Error(`Failed to fetch subjects: ${response.status}`);
                 }
 
                 const data = await response.json();
+                console.log(`📡 API Response:`, data);
+                
                 const subjects = data.subjects || [];
+                console.log(`📚 Subjects array:`, subjects);
+                console.log(`📚 Subjects count:`, subjects.length);
                 
                 if (subjects.length === 0) {
-                    loadDefaultSubjects();
+                    console.warn('⚠️ No subjects found in API response, using defaults');
+                    select.innerHTML = '<option value="">No subjects found for this standard</option>';
+                    select.disabled = false;
                     return;
                 }
                 
@@ -798,7 +812,9 @@
                 
             } catch (error) {
                 console.error('❌ Error loading subjects:', error);
-                loadDefaultSubjects();
+                console.error('❌ Error details:', error.message);
+                select.innerHTML = '<option value="">Error loading subjects</option>';
+                select.disabled = false;
             }
         }
 
@@ -833,18 +849,29 @@
             try {
                 console.log(`🌐 Loading languages for standard ${standard}, subject ${subject}...`);
                 
-                const response = await fetch(`${CONFIG.ADMIN_API_URL}/api/documents/languages/${standard}/${subject}`, {
+                const url = `${CONFIG.ADMIN_API_URL}/api/documents/languages/${standard}/${subject}`;
+                console.log(`📡 API URL: ${url}`);
+                
+                const response = await fetch(url, {
                     headers: getAuthHeaders()
                 });
 
+                console.log(`📡 Languages response status: ${response.status}`);
+
                 if (!response.ok) {
-                    throw new Error('Failed to fetch languages');
+                    const errorText = await response.text();
+                    console.error(`❌ API Error (${response.status}):`, errorText);
+                    throw new Error(`Failed to fetch languages: ${response.status}`);
                 }
 
                 const data = await response.json();
+                console.log(`📡 Languages API Response:`, data);
+                
                 const languages = data.languages || [];
+                console.log(`🌐 Languages array:`, languages);
                 
                 if (languages.length === 0) {
+                    console.warn('⚠️ No languages found, using defaults');
                     loadDefaultLanguages();
                     return;
                 }
