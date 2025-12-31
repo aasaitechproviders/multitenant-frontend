@@ -284,6 +284,37 @@
             cursor: not-allowed;
         }
 
+        /* ✅ NEW: Highlight document type dropdown */
+        #documentType {
+            border: 2px solid #e74c3c;
+            font-weight: 600;
+            background-color: #fff9f9;
+        }
+
+        /* ✅ NEW: Conditional fields styling */
+        .conditional-fields {
+            display: none;
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color, #667eea);
+            margin-top: 15px;
+        }
+
+        .conditional-fields.show {
+            display: block;
+        }
+
+        .conditional-header {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
         .form-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -484,6 +515,18 @@
                             <label>School Name <span class="required">*</span></label>
                             <input type="text" id="schoolNameInput" required disabled>
                         </div>
+                        
+                        <!-- ✅ NEW: Document Type Dropdown (MOST IMPORTANT) -->
+                        <div class="form-group">
+                            <label>📝 Document Type <span class="required">*</span></label>
+                            <select id="documentType" required>
+                                <option value="">⚠️ SELECT DOCUMENT TYPE</option>
+                                <option value="study_material">📚 Study Material / Textbook</option>
+                                <option value="question_bank">📝 Question Bank / Previous Papers</option>
+                                <option value="qna_pairs">💡 Q&A Pairs / Practice Problems</option>
+                            </select>
+                        </div>
+
                         <div class="form-group">
                             <label>Standard/Grade <span class="required">*</span></label>
                             <select id="standard" required>
@@ -539,6 +582,31 @@
                         </div>
                     </div>
 
+                    <!-- ✅ NEW: Conditional Fields for Question Bank -->
+                    <div id="questionBankFields" class="conditional-fields">
+                        <div class="conditional-header">
+                            📝 Question Bank Additional Details
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Exam Type</label>
+                                <select id="examType">
+                                    <option value="">Select Exam Type</option>
+                                    <option value="Mid Term">Mid Term</option>
+                                    <option value="Annual">Annual Exam</option>
+                                    <option value="Model Paper">Model Paper</option>
+                                    <option value="Practice Test">Practice Test</option>
+                                    <option value="Quarterly">Quarterly Exam</option>
+                                    <option value="Half Yearly">Half Yearly Exam</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Exam Year</label>
+                                <input type="text" id="examYear" placeholder="e.g., 2024">
+                            </div>
+                        </div>
+                    </div>
+
                     <button type="submit" class="btn" id="uploadBtn" disabled>
                         Upload Document
                     </button>
@@ -567,7 +635,7 @@
     </div>
 
     <script>
-        // API Configuration from index.html
+        // API Configuration
         const CONFIG = {
             API_URL: 'https://dnotflkcoj.execute-api.ap-southeast-2.amazonaws.com/prod',
             ADMIN_API_URL: 'https://zfof5qbg0m.execute-api.ap-southeast-2.amazonaws.com/PROD',
@@ -579,7 +647,7 @@
         let allDocuments = [];
         let schoolInfo = null;
 
-        // Extract school code from subdomain (matching index.html)
+        // Extract school code from subdomain
         function getSchoolCode() {
             const hostname = window.location.hostname;
             
@@ -596,7 +664,7 @@
             return localStorage.getItem('schoolCode') || 'demo';
         }
 
-        // Check authentication (matching index.html pattern)
+        // Check authentication
         function checkAuth() {
             const authToken = localStorage.getItem('authToken');
             const userRole = localStorage.getItem('userRole');
@@ -607,7 +675,6 @@
                 return false;
             }
             
-            // Verify school code matches
             if (localStorage.getItem('schoolCode') !== schoolCode) {
                 localStorage.clear();
                 window.location.href = 'index.html';
@@ -617,7 +684,7 @@
             return true;
         }
 
-        // Get auth headers (matching admin/teacher Lambda pattern)
+        // Get auth headers
         function getAuthHeaders() {
             const sessionToken = localStorage.getItem('sessionToken');
             const schoolCode = localStorage.getItem('schoolCode');
@@ -626,16 +693,14 @@
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${sessionToken}`,
                 'X-School-ID': schoolCode
-                // ✅ REMOVED: X-User-Email (now sent in request body)
             };
         }
 
-        // Load school branding (matching index.html)
+        // Load school branding
         async function loadSchoolBranding() {
             const schoolCode = getSchoolCode();
             const schoolName = localStorage.getItem('schoolName');
 
-            // Set from localStorage first
             if (schoolName) {
                 document.getElementById('navSchoolName').textContent = schoolName;
                 document.getElementById('navLogo').textContent = schoolName.charAt(0);
@@ -665,12 +730,11 @@
             }
         }
 
-        // Load teacher profile (matching pattern)
+        // Load teacher profile
         async function loadTeacherProfile() {
             const userName = localStorage.getItem('userName');
             const userEmail = localStorage.getItem('userEmail');
             
-            // Set from localStorage first
             document.getElementById('userName').textContent = userName || userEmail || 'Teacher';
             document.getElementById('userNameTitle').textContent = userName || 'Teacher';
 
@@ -690,7 +754,6 @@
                 console.error('Error loading profile:', error);
             }
         }
-
 
         // Load available standards from MongoDB
         async function loadStandards() {
@@ -755,7 +818,6 @@
                 select.disabled = true;
                 select.innerHTML = '<option value="">Select standard first</option>';
                 
-                // Also reset dependent dropdowns
                 document.getElementById('language').disabled = true;
                 document.getElementById('language').innerHTML = '<option value="">Select subject first</option>';
                 document.getElementById('group').disabled = true;
@@ -770,30 +832,16 @@
                 console.log(`📚 Loading subjects for standard ${standard}...`);
                 
                 const url = `${CONFIG.ADMIN_API_URL}/api/documents/subjects/${standard}`;
-                console.log(`📡 API URL: ${url}`);
+                const response = await fetch(url, { headers: getAuthHeaders() });
                 
-                const headers = getAuthHeaders();
-                console.log(`📡 Headers:`, headers);
-                
-                const response = await fetch(url, { headers });
-                
-                console.log(`📡 Response status: ${response.status}`);
-
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error(`❌ API Error (${response.status}):`, errorText);
                     throw new Error(`Failed to fetch subjects: ${response.status}`);
                 }
 
                 const data = await response.json();
-                console.log(`📡 API Response:`, data);
-                
                 const subjects = data.subjects || [];
-                console.log(`📚 Subjects array:`, subjects);
-                console.log(`📚 Subjects count:`, subjects.length);
                 
                 if (subjects.length === 0) {
-                    console.warn('⚠️ No subjects found in API response, using defaults');
                     select.innerHTML = '<option value="">No subjects found for this standard</option>';
                     select.disabled = false;
                     return;
@@ -813,25 +861,9 @@
                 
             } catch (error) {
                 console.error('❌ Error loading subjects:', error);
-                console.error('❌ Error details:', error.message);
                 select.innerHTML = '<option value="">Error loading subjects</option>';
                 select.disabled = false;
             }
-        }
-
-        function loadDefaultSubjects() {
-            const select = document.getElementById('subject');
-            select.innerHTML = '<option value="">Select Subject</option>';
-            
-            const subjects = ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'English', 'Tamil', 'Hindi', 'Social Science', 'Computer Science'];
-            subjects.forEach(subj => {
-                const option = document.createElement('option');
-                option.value = subj;
-                option.textContent = subj;
-                select.appendChild(option);
-            });
-            
-            select.disabled = false;
         }
 
         // Load languages/mediums based on standard AND subject
@@ -851,28 +883,16 @@
                 console.log(`🌐 Loading languages for standard ${standard}, subject ${subject}...`);
                 
                 const url = `${CONFIG.ADMIN_API_URL}/api/documents/languages/${standard}/${subject}`;
-                console.log(`📡 API URL: ${url}`);
-                
-                const response = await fetch(url, {
-                    headers: getAuthHeaders()
-                });
-
-                console.log(`📡 Languages response status: ${response.status}`);
+                const response = await fetch(url, { headers: getAuthHeaders() });
 
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error(`❌ API Error (${response.status}):`, errorText);
                     throw new Error(`Failed to fetch languages: ${response.status}`);
                 }
 
                 const data = await response.json();
-                console.log(`📡 Languages API Response:`, data);
-                
                 const languages = data.languages || [];
-                console.log(`🌐 Languages array:`, languages);
                 
                 if (languages.length === 0) {
-                    console.warn('⚠️ No languages found, using defaults');
                     loadDefaultLanguages();
                     return;
                 }
@@ -949,8 +969,6 @@
                 
                 if (groups.length > 0) {
                     console.log(`✅ Loaded ${groups.length} groups:`, groups);
-                } else {
-                    console.log('ℹ️ No groups available for this combination');
                 }
                 
             } catch (error) {
@@ -959,6 +977,19 @@
                 select.disabled = false;
             }
         }
+
+        // ✅ NEW: Handle document type change
+        document.getElementById('documentType').addEventListener('change', function() {
+            const documentType = this.value;
+            const questionBankFields = document.getElementById('questionBankFields');
+            
+            // Show/hide conditional fields based on document type
+            if (documentType === 'question_bank') {
+                questionBankFields.classList.add('show');
+            } else {
+                questionBankFields.classList.remove('show');
+            }
+        });
 
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
@@ -1027,12 +1058,14 @@
                 return;
             }
 
-            // ✅ UPDATED: Added uploaded_by field with user email
             const userEmail = localStorage.getItem('userEmail') || currentUser?.email || 'unknown';
+            const documentType = document.getElementById('documentType').value;
             
+            // ✅ UPDATED: Build metadata with document_type
             const metadata = {
                 school_name: document.getElementById('schoolNameInput').value.trim(),
-                schoolCode: localStorage.getItem('schoolCode'),  // ✅ NEW: Add schoolCode
+                schoolCode: localStorage.getItem('schoolCode'),
+                document_type: documentType,  // ✅ NEW: Critical field
                 standard: document.getElementById('standard').value,
                 subject: document.getElementById('subject').value,
                 language: document.getElementById('language').value,
@@ -1045,13 +1078,20 @@
                 book_name: document.getElementById('bookName').value.trim(),
                 academic_year: document.getElementById('academicYear').value.trim(),
                 original_filename: selectedFile.name,
-                uploaded_by: userEmail  // ✅ NEW: Track who uploaded the document
+                uploaded_by: userEmail
             };
+
+            // ✅ NEW: Add exam_type and exam_year if document_type is question_bank
+            if (documentType === 'question_bank') {
+                metadata.exam_type = document.getElementById('examType').value.trim();
+                metadata.exam_year = document.getElementById('examYear').value.trim();
+            }
 
             console.log('📤 Uploading with metadata:', metadata);
 
-            if (!metadata.school_name || !metadata.standard || !metadata.subject || !metadata.language) {
-                showStatus('Please fill all required fields (School, Standard, Subject, Language)', 'error');
+            // Validate required fields
+            if (!metadata.school_name || !metadata.document_type || !metadata.standard || !metadata.subject || !metadata.language) {
+                showStatus('Please fill all required fields (Document Type, School, Standard, Subject, Language)', 'error');
                 return;
             }
 
@@ -1093,8 +1133,14 @@
                 }
 
                 showProgress(100);
+                
+                // ✅ UPDATED: Show document type in success message
+                const docTypeLabel = documentType === 'study_material' ? '📚 Study Material' :
+                                   documentType === 'question_bank' ? '📝 Question Bank' :
+                                   documentType === 'qna_pairs' ? '💡 Q&A Pairs' : documentType;
+                
                 showStatus(
-                    `✅ Document uploaded successfully!<br>Batch ID: ${data.batch_upload_id}<br>The document is now being processed.`,
+                    `✅ Document uploaded successfully!<br>Type: ${docTypeLabel}<br>Batch ID: ${data.batch_upload_id}<br>The document is now being processed.`,
                     'success'
                 );
 
@@ -1111,6 +1157,9 @@
                 document.getElementById('language').disabled = true;
                 document.getElementById('group').innerHTML = '<option value="">Select subject first</option>';
                 document.getElementById('group').disabled = true;
+                
+                // Hide conditional fields
+                document.getElementById('questionBankFields').classList.remove('show');
 
                 loadStats();
                 loadActivities();
@@ -1147,29 +1196,21 @@
         async function loadStats() {
             try {
                 console.log('📊 Loading teacher statistics...');
-                console.log('   API URL:', `${CONFIG.ADMIN_API_URL}/api/teacher/documents`);
-                console.log('   User Email:', localStorage.getItem('userEmail'));
                 
-                // ✅ UPDATED: POST request with email in body
                 const response = await fetch(`${CONFIG.ADMIN_API_URL}/api/teacher/documents`, {
-                    method: 'POST',  // ✅ Changed from GET to POST
+                    method: 'POST',
                     headers: getAuthHeaders(),
                     body: JSON.stringify({
                         userEmail: localStorage.getItem('userEmail') || currentUser?.email || 'unknown'
                     })
                 });
 
-                console.log('   Response status:', response.status);
-
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('❌ API Error:', response.status, errorText);
-                    throw new Error(`API returned ${response.status}: ${errorText}`);
+                    throw new Error(`API returned ${response.status}`);
                 }
 
                 const data = await response.json();
                 console.log('✅ Stats loaded:', data.stats);
-                console.log('   Documents count:', data.documents.length);
                 
                 allDocuments = data.documents;
                 
@@ -1180,9 +1221,6 @@
                 
             } catch (error) {
                 console.error('❌ Error loading stats:', error);
-                console.error('   Error details:', error.message);
-                
-                // Show user-friendly error
                 document.getElementById('totalDocs').textContent = '?';
                 document.getElementById('processedDocs').textContent = '?';
                 document.getElementById('processingDocs').textContent = '?';
@@ -1198,11 +1236,8 @@
                 console.log('📋 Loading activities...');
                 
                 if (allDocuments.length === 0) {
-                    console.log('   No documents in cache, fetching...');
                     await loadStats();
                 }
-                
-                console.log('   Total documents:', allDocuments.length);
                 
                 if (allDocuments.length === 0) {
                     container.innerHTML = `
@@ -1218,6 +1253,7 @@
                 let html = '<table><thead><tr>';
                 html += '<th>Date</th>';
                 html += '<th>Document</th>';
+                html += '<th>Type</th>';  // ✅ NEW: Document Type column
                 html += '<th>Subject</th>';
                 html += '<th>Standard</th>';
                 html += '<th>Pages</th>';
@@ -1229,10 +1265,16 @@
                     const statusClass = doc.status === 'completed' ? 'success' : 
                                       doc.status === 'failed' ? 'error' : 'processing';
                     
+                    // ✅ NEW: Show document type with icon
+                    const docTypeLabel = doc.document_type === 'study_material' ? '📚 Study' :
+                                       doc.document_type === 'question_bank' ? '📝 Questions' :
+                                       doc.document_type === 'qna_pairs' ? '💡 Q&A' : '-';
+                    
                     html += `
                         <tr>
                             <td>${date}</td>
                             <td>${doc.original_filename || 'Unknown'}</td>
+                            <td>${docTypeLabel}</td>
                             <td>${doc.subject || '-'}</td>
                             <td>${doc.standard || '-'}</td>
                             <td>${doc.page_count || 0}</td>
@@ -1248,7 +1290,6 @@
 
             } catch (error) {
                 console.error('❌ Error loading activities:', error);
-                console.error('   Error details:', error.message);
                 container.innerHTML = `
                     <div class="empty-state">
                         <p style="color: #e74c3c;">Error loading activities</p>
