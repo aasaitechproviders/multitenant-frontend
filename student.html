@@ -524,7 +524,6 @@
             font-weight: 500;
         }
 
-        /* NEW: Meta Info Section */
         .meta-info-section {
             display: flex;
             flex-wrap: wrap;
@@ -575,7 +574,6 @@
             color: #6b21a8;
         }
 
-        /* NEW: Filters Applied Section */
         .filters-applied-section {
             padding: 1rem;
             background: #eff6ff;
@@ -858,6 +856,14 @@
             font-weight: 600;
             color: var(--dark);
             margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .related-topics-header::before {
+            content: '🔗';
+            font-size: 1.3rem;
         }
 
         .related-topics-grid {
@@ -2073,7 +2079,7 @@
                 console.log('✅ Search response:', data);
                 
                 state.chatId = data.chatId;
-                state.answerText = data.answer;
+                state.answerText = data.htmlContent || data.answer;
                 
                 displayResults(data, question, responseTime, currentPreferences);
                 
@@ -2123,7 +2129,7 @@
                 </div>
             `;
             
-            // Meta Info Section (NEW)
+            // Meta Info Section
             const confidence = data.routing?.confidence || 0.7;
             const confidenceLevel = getConfidenceLevel(confidence);
             const confidenceText = getConfidenceText(confidence);
@@ -2145,7 +2151,7 @@
                 </div>
             `;
             
-            // Filters Applied Section (NEW)
+            // Filters Applied Section
             resultHTML += `
                 <div class="filters-applied-section">
                     <div class="filters-applied-header">
@@ -2165,41 +2171,19 @@
                 </div>
             `;
             
-            // Answer Sections
-            if (data.original && data.aiExplanation) {
-                resultHTML += `
-                    <div class="answer-section original-definition-section">
-                        <div class="answer-section-header">
-                            📖 Textbook Definition
-                        </div>
-                        <div class="answer-section-content">
-                            <div class="answer-content">${data.original}</div>
-                        </div>
+            // Answer Section
+            const formattedAnswer = data.htmlContent || data.answer || 'No answer available';
+            
+            resultHTML += `
+                <div class="answer-section ai-explanation-section">
+                    <div class="answer-section-header">
+                        💡 Answer
                     </div>
-                    
-                    <div class="answer-section ai-explanation-section">
-                        <div class="answer-section-header">
-                            🤖 AI Simplified Explanation
-                        </div>
-                        <div class="answer-section-content">
-                            <div class="answer-content">${data.aiExplanation}</div>
-                        </div>
+                    <div class="answer-section-content">
+                        <div class="answer-content">${formattedAnswer}</div>
                     </div>
-                `;
-            } else {
-                const formattedAnswer = data.htmlContent || data.answer || 'No answer available';
-                
-                resultHTML += `
-                    <div class="answer-section ai-explanation-section">
-                        <div class="answer-section-header">
-                            💡 Answer
-                        </div>
-                        <div class="answer-section-content">
-                            <div class="answer-content">${formattedAnswer}</div>
-                        </div>
-                    </div>
-                `;
-            }
+                </div>
+            `;
             
             // Source References
             if (data.sources && data.sources.length > 0) {
@@ -2264,16 +2248,16 @@
                 resultHTML += `</div>`;
             }
             
-            // Related Topics Section (NEW - Always show)
-            resultHTML += `
-                <div class="related-topics-section">
-                    <div class="related-topics-header">
-                        🔗 Explore Related Topics
-                    </div>
-                    <div class="related-topics-grid" id="related-topics-container">
-            `;
-            
+            // Related Topics Section - FROM BACKEND
             if (data.relatedTopics && data.relatedTopics.length > 0) {
+                resultHTML += `
+                    <div class="related-topics-section">
+                        <div class="related-topics-header">
+                            Explore Related Topics from Sources
+                        </div>
+                        <div class="related-topics-grid" id="related-topics-container">
+                `;
+                
                 data.relatedTopics.forEach(topic => {
                     resultHTML += `
                         <button class="related-topic-btn" onclick="searchRelatedTopic('${escapeHtml(topic).replace(/'/g, "\\'")}')">
@@ -2282,23 +2266,12 @@
                         </button>
                     `;
                 });
-            } else {
-                // Generate default related topics based on the question
-                const defaultTopics = generateRelatedTopics(question, preferences);
-                defaultTopics.forEach(topic => {
-                    resultHTML += `
-                        <button class="related-topic-btn" onclick="searchRelatedTopic('${escapeHtml(topic).replace(/'/g, "\\'")}')">
-                            <span>➜</span>
-                            <span>${escapeHtml(topic)}</span>
-                        </button>
-                    `;
-                });
-            }
-            
-            resultHTML += `
+                
+                resultHTML += `
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
+            }
             
             // Action Buttons
             resultHTML += `
@@ -2312,36 +2285,6 @@
             
             resultsContent.innerHTML = resultHTML;
             renderMath();
-        }
-
-        function generateRelatedTopics(question, preferences) {
-            // Simple related topics generator based on subject and question keywords
-            const topics = [];
-            const subject = preferences.subject || '';
-            
-            // Extract key words from question
-            const words = question.toLowerCase().split(' ');
-            const keyWords = words.filter(w => w.length > 4);
-            
-            if (subject.includes('math')) {
-                topics.push('Practice similar problems');
-                topics.push('Learn the formula');
-                topics.push('Watch video explanation');
-            } else if (subject.includes('science') || subject.includes('physics') || subject.includes('chemistry')) {
-                topics.push('Related experiments');
-                topics.push('Real-world applications');
-                topics.push('Key definitions');
-            } else if (subject.includes('history') || subject.includes('social')) {
-                topics.push('Timeline of events');
-                topics.push('Key figures involved');
-                topics.push('Related topics');
-            } else {
-                topics.push('Learn more about this');
-                topics.push('Practice questions');
-                topics.push('Video lessons');
-            }
-            
-            return topics.slice(0, 3);
         }
 
         function searchRelatedTopic(topic) {
