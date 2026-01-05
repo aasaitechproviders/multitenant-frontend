@@ -524,6 +524,95 @@
             font-weight: 500;
         }
 
+        /* NEW: Meta Info Section */
+        .meta-info-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+
+        .meta-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .meta-badge.confidence {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .meta-badge.confidence.high {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .meta-badge.confidence.medium {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .meta-badge.time {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+
+        .meta-badge.cached {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .meta-badge.model {
+            background: #f3e8ff;
+            color: #6b21a8;
+        }
+
+        /* NEW: Filters Applied Section */
+        .filters-applied-section {
+            padding: 1rem;
+            background: #eff6ff;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid var(--primary);
+        }
+
+        .filters-applied-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 0.75rem;
+            font-size: 0.95rem;
+        }
+
+        .filters-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .filter-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.9rem;
+            background: white;
+            border: 2px solid var(--primary);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--primary);
+        }
+
         .answer-section {
             margin-bottom: 1.5rem;
         }
@@ -853,57 +942,6 @@
             color: #92400e;
         }
 
-        .metadata-section {
-            margin-top: 2rem;
-            padding: 1rem;
-            background: var(--light);
-            border-radius: 8px;
-            border-left: 4px solid var(--primary);
-        }
-
-        .metadata-title {
-            font-weight: 600;
-            color: var(--dark);
-            margin-bottom: 0.75rem;
-            font-size: 0.95rem;
-        }
-
-        .metadata-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 0.75rem;
-        }
-
-        .metadata-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.5rem;
-            background: white;
-            border-radius: 6px;
-        }
-
-        .metadata-label {
-            font-size: 0.85rem;
-            color: var(--gray);
-            font-weight: 500;
-        }
-
-        .metadata-value {
-            font-size: 0.9rem;
-            color: var(--dark);
-            font-weight: 600;
-        }
-
-        .badge-high {
-            background: #dcfce7;
-            color: #166534;
-            padding: 0.25rem 0.75rem;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
         @media (max-width: 968px) {
             .main-content {
                 grid-template-columns: 1fr;
@@ -931,10 +969,6 @@
 
             .results-card-mobile.show {
                 display: block !important;
-            }
-
-            .metadata-grid {
-                grid-template-columns: 1fr;
             }
 
             .related-topics-grid {
@@ -1012,6 +1046,15 @@
 
             .btn {
                 width: 100%;
+            }
+
+            .meta-info-section {
+                flex-direction: column;
+            }
+
+            .meta-badge {
+                width: 100%;
+                justify-content: center;
             }
         }
 
@@ -1936,6 +1979,18 @@
             voiceStatusMobile.textContent = '';
         }
 
+        function getConfidenceLevel(confidence) {
+            if (confidence >= 0.8) return 'high';
+            if (confidence >= 0.5) return 'medium';
+            return 'low';
+        }
+
+        function getConfidenceText(confidence) {
+            if (confidence >= 0.8) return 'High';
+            if (confidence >= 0.5) return 'Medium';
+            return 'Low';
+        }
+
         async function performSearch() {
             if (!state.user) {
                 showNotification('Please sign in first', 'error');
@@ -2060,13 +2115,57 @@
             
             let resultHTML = '';
             
+            // Question Display
             resultHTML += `
                 <div class="question-display">
-                    <div class="question-label">Your Question</div>
+                    <div class="question-label">YOUR QUESTION</div>
                     <div class="question-text">${escapeHtml(question)}</div>
                 </div>
             `;
             
+            // Meta Info Section (NEW)
+            const confidence = data.routing?.confidence || 0.7;
+            const confidenceLevel = getConfidenceLevel(confidence);
+            const confidenceText = getConfidenceText(confidence);
+            const cached = data.cached || false;
+            const modelUsed = data.modelUsed || 'unknown';
+            
+            resultHTML += `
+                <div class="meta-info-section">
+                    <div class="meta-badge confidence ${confidenceLevel}">
+                        Confidence: ${confidenceText}
+                    </div>
+                    <div class="meta-badge time">
+                        ⏱️ ${responseTime}s
+                    </div>
+                    ${cached ? '<div class="meta-badge cached">⚡ Cached</div>' : ''}
+                    <div class="meta-badge model">
+                        🤖 ${modelUsed}
+                    </div>
+                </div>
+            `;
+            
+            // Filters Applied Section (NEW)
+            resultHTML += `
+                <div class="filters-applied-section">
+                    <div class="filters-applied-header">
+                        🎯 Filters Applied:
+                    </div>
+                    <div class="filters-list">
+                        <div class="filter-chip">
+                            📚 ${preferences.standard ? `Class ${preferences.standard}` : 'All Standards'}
+                        </div>
+                        <div class="filter-chip">
+                            📖 ${preferences.subject ? preferences.subject.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'All Subjects'}
+                        </div>
+                        <div class="filter-chip">
+                            🌐 ${preferences.medium ? preferences.medium.charAt(0).toUpperCase() + preferences.medium.slice(1) : 'En'}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Answer Sections
             if (data.original && data.aiExplanation) {
                 resultHTML += `
                     <div class="answer-section original-definition-section">
@@ -2093,7 +2192,7 @@
                 resultHTML += `
                     <div class="answer-section ai-explanation-section">
                         <div class="answer-section-header">
-                            🤖 AI Answer
+                            💡 Answer
                         </div>
                         <div class="answer-section-content">
                             <div class="answer-content">${formattedAnswer}</div>
@@ -2102,6 +2201,7 @@
                 `;
             }
             
+            // Source References
             if (data.sources && data.sources.length > 0) {
                 resultHTML += `
                     <div class="source-contexts-section">
@@ -2164,15 +2264,16 @@
                 resultHTML += `</div>`;
             }
             
+            // Related Topics Section (NEW - Always show)
+            resultHTML += `
+                <div class="related-topics-section">
+                    <div class="related-topics-header">
+                        🔗 Explore Related Topics
+                    </div>
+                    <div class="related-topics-grid" id="related-topics-container">
+            `;
+            
             if (data.relatedTopics && data.relatedTopics.length > 0) {
-                resultHTML += `
-                    <div class="related-topics-section">
-                        <div class="related-topics-header">
-                            🔗 Explore Related Topics
-                        </div>
-                        <div class="related-topics-grid">
-                `;
-                
                 data.relatedTopics.forEach(topic => {
                     resultHTML += `
                         <button class="related-topic-btn" onclick="searchRelatedTopic('${escapeHtml(topic).replace(/'/g, "\\'")}')">
@@ -2181,25 +2282,66 @@
                         </button>
                     `;
                 });
-                
-                resultHTML += `
-                        </div>
-                    </div>
-                `;
+            } else {
+                // Generate default related topics based on the question
+                const defaultTopics = generateRelatedTopics(question, preferences);
+                defaultTopics.forEach(topic => {
+                    resultHTML += `
+                        <button class="related-topic-btn" onclick="searchRelatedTopic('${escapeHtml(topic).replace(/'/g, "\\'")}')">
+                            <span>➜</span>
+                            <span>${escapeHtml(topic)}</span>
+                        </button>
+                    `;
+                });
             }
             
             resultHTML += `
-                    <div class="result-actions">
-                        <button class="btn btn-primary" onclick="copyAnswer()">📋 Copy Answer</button>
-                        <button class="btn" id="like-btn" onclick="submitFeedback('like')">👍 Like</button>
-                        <button class="btn" id="dislike-btn" onclick="submitFeedback('dislike')">👎 Dislike</button>
-                        <button class="btn" id="report-btn" onclick="submitFeedback('report')">🚩 Report</button>
                     </div>
+                </div>
+            `;
+            
+            // Action Buttons
+            resultHTML += `
+                <div class="result-actions">
+                    <button class="btn btn-primary" onclick="copyAnswer()">📋 Copy Answer</button>
+                    <button class="btn" id="like-btn" onclick="submitFeedback('like')">👍 Like</button>
+                    <button class="btn" id="dislike-btn" onclick="submitFeedback('dislike')">👎 Dislike</button>
+                    <button class="btn" id="report-btn" onclick="submitFeedback('report')">🚩 Report</button>
                 </div>
             `;
             
             resultsContent.innerHTML = resultHTML;
             renderMath();
+        }
+
+        function generateRelatedTopics(question, preferences) {
+            // Simple related topics generator based on subject and question keywords
+            const topics = [];
+            const subject = preferences.subject || '';
+            
+            // Extract key words from question
+            const words = question.toLowerCase().split(' ');
+            const keyWords = words.filter(w => w.length > 4);
+            
+            if (subject.includes('math')) {
+                topics.push('Practice similar problems');
+                topics.push('Learn the formula');
+                topics.push('Watch video explanation');
+            } else if (subject.includes('science') || subject.includes('physics') || subject.includes('chemistry')) {
+                topics.push('Related experiments');
+                topics.push('Real-world applications');
+                topics.push('Key definitions');
+            } else if (subject.includes('history') || subject.includes('social')) {
+                topics.push('Timeline of events');
+                topics.push('Key figures involved');
+                topics.push('Related topics');
+            } else {
+                topics.push('Learn more about this');
+                topics.push('Practice questions');
+                topics.push('Video lessons');
+            }
+            
+            return topics.slice(0, 3);
         }
 
         function searchRelatedTopic(topic) {
