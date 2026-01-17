@@ -284,14 +284,12 @@
             cursor: not-allowed;
         }
 
-        /* ✅ NEW: Highlight document type dropdown */
         #documentType {
             border: 2px solid #e74c3c;
             font-weight: 600;
             background-color: #fff9f9;
         }
 
-        /* ✅ NEW: Conditional fields styling */
         .conditional-fields {
             display: none;
             background: #f8f9ff;
@@ -516,7 +514,6 @@
                             <input type="text" id="schoolNameInput" required disabled>
                         </div>
                         
-                        <!-- ✅ NEW: Document Type Dropdown (MOST IMPORTANT) -->
                         <div class="form-group">
                             <label>📝 Document Type <span class="required">*</span></label>
                             <select id="documentType" required>
@@ -535,20 +532,32 @@
                         </div>
                         <div class="form-group">
                             <label>Subject <span class="required">*</span></label>
-                            <select id="subject" required disabled>
-                                <option value="">Select standard first</option>
+                            <select id="subject" required>
+                                <option value="">Select Subject</option>
+                                <option value="தமிழ்">தமிழ்</option>
+                                <option value="ENGLISH">ENGLISH</option>
+                                <option value="MATHS">MATHS</option>
+                                <option value="SCIENCE">SCIENCE</option>
+                                <option value="SOCIAL-SCIENCE">SOCIAL-SCIENCE</option>
+                                <option value="BIOLOGY">BIOLOGY</option>
+                                <option value="PHYSICS">PHYSICS</option>
+                                <option value="CHEMISTRY">CHEMISTRY</option>
+                                <option value="COMPUTER-SCIENCE">COMPUTER-SCIENCE</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label>Language/Medium <span class="required">*</span></label>
-                            <select id="language" required disabled>
-                                <option value="">Select subject first</option>
+                            <select id="language" required>
+                                <option value="">Select Language</option>
+                                <option value="en">English</option>
+                                <option value="ta">Tamil</option>
+                                <option value="hi">Hindi</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label>Group</label>
-                            <select id="group" disabled>
-                                <option value="">Select subject first</option>
+                            <select id="group">
+                                <option value="">No Group (Optional)</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -578,11 +587,17 @@
                         </div>
                         <div class="form-group">
                             <label>Academic Year</label>
-                            <input type="text" id="academicYear" placeholder="e.g., 2024-25" value="2024-25">
+                            <select id="academicYear">
+                                <option value="">Select Year (Optional)</option>
+                                <option value="2022">2022</option>
+                                <option value="2023">2023</option>
+                                <option value="2024" selected>2024</option>
+                                <option value="2025">2025</option>
+                            </select>
                         </div>
                     </div>
 
-                    <!-- ✅ NEW: Conditional Fields for Question Bank -->
+                    <!-- Conditional Fields for Question Bank -->
                     <div id="questionBankFields" class="conditional-fields">
                         <div class="conditional-header">
                             📝 Question Bank Additional Details
@@ -810,132 +825,13 @@
             select.disabled = false;
         }
 
-        // Load subjects based on selected standard
-        async function loadSubjects(standard) {
-            const select = document.getElementById('subject');
-            
-            if (!standard) {
-                select.disabled = true;
-                select.innerHTML = '<option value="">Select standard first</option>';
-                
-                document.getElementById('language').disabled = true;
-                document.getElementById('language').innerHTML = '<option value="">Select subject first</option>';
-                document.getElementById('group').disabled = true;
-                document.getElementById('group').innerHTML = '<option value="">Select subject first</option>';
-                return;
-            }
-            
-            select.innerHTML = '<option value="">Loading...</option>';
-            select.disabled = true;
-            
-            try {
-                console.log(`📚 Loading subjects for standard ${standard}...`);
-                
-                const url = `${CONFIG.ADMIN_API_URL}/api/documents/subjects/${standard}`;
-                const response = await fetch(url, { headers: getAuthHeaders() });
-                
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch subjects: ${response.status}`);
-                }
-
-                const data = await response.json();
-                const subjects = data.subjects || [];
-                
-                if (subjects.length === 0) {
-                    select.innerHTML = '<option value="">No subjects found for this standard</option>';
-                    select.disabled = false;
-                    return;
-                }
-                
-                select.innerHTML = '<option value="">Select Subject</option>';
-                
-                subjects.forEach(subj => {
-                    const option = document.createElement('option');
-                    option.value = subj;
-                    option.textContent = subj;
-                    select.appendChild(option);
-                });
-                
-                select.disabled = false;
-                console.log(`✅ Loaded ${subjects.length} subjects for standard ${standard}:`, subjects);
-                
-            } catch (error) {
-                console.error('❌ Error loading subjects:', error);
-                select.innerHTML = '<option value="">Error loading subjects</option>';
-                select.disabled = false;
-            }
-        }
-
-        // Load languages/mediums based on standard AND subject
-        async function loadLanguages(standard, subject) {
-            const select = document.getElementById('language');
-            
-            if (!standard || !subject) {
-                select.disabled = true;
-                select.innerHTML = '<option value="">Select subject first</option>';
-                return;
-            }
-            
-            select.innerHTML = '<option value="">Loading...</option>';
-            select.disabled = true;
-            
-            try {
-                console.log(`🌐 Loading languages for standard ${standard}, subject ${subject}...`);
-                
-                const url = `${CONFIG.ADMIN_API_URL}/api/documents/languages/${standard}/${subject}`;
-                const response = await fetch(url, { headers: getAuthHeaders() });
-
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch languages: ${response.status}`);
-                }
-
-                const data = await response.json();
-                const languages = data.languages || [];
-                
-                if (languages.length === 0) {
-                    loadDefaultLanguages();
-                    return;
-                }
-                
-                select.innerHTML = '<option value="">Select Language</option>';
-                
-                languages.forEach(lang => {
-                    const option = document.createElement('option');
-                    option.value = lang;
-                    option.textContent = lang === 'en' ? 'English' : 
-                                       lang === 'ta' ? 'Tamil' : 
-                                       lang === 'hi' ? 'Hindi' : 
-                                       lang.toUpperCase();
-                    select.appendChild(option);
-                });
-                
-                select.disabled = false;
-                console.log(`✅ Loaded ${languages.length} languages:`, languages);
-                
-            } catch (error) {
-                console.error('❌ Error loading languages:', error);
-                loadDefaultLanguages();
-            }
-        }
-
-        function loadDefaultLanguages() {
-            const select = document.getElementById('language');
-            select.innerHTML = `
-                <option value="">Select Language</option>
-                <option value="en">English</option>
-                <option value="ta">Tamil</option>
-                <option value="hi">Hindi</option>
-            `;
-            select.disabled = false;
-        }
-
         // Load groups based on standard AND subject
         async function loadGroups(standard, subject) {
             const select = document.getElementById('group');
             
             if (!standard || !subject) {
-                select.disabled = true;
-                select.innerHTML = '<option value="">Select subject first</option>';
+                select.disabled = false;
+                select.innerHTML = '<option value="">No Group (Optional)</option>';
                 return;
             }
             
@@ -978,12 +874,11 @@
             }
         }
 
-        // ✅ NEW: Handle document type change
+        // Handle document type change
         document.getElementById('documentType').addEventListener('change', function() {
             const documentType = this.value;
             const questionBankFields = document.getElementById('questionBankFields');
             
-            // Show/hide conditional fields based on document type
             if (documentType === 'question_bank') {
                 questionBankFields.classList.add('show');
             } else {
@@ -1061,11 +956,10 @@
             const userEmail = localStorage.getItem('userEmail') || currentUser?.email || 'unknown';
             const documentType = document.getElementById('documentType').value;
             
-            // ✅ UPDATED: Build metadata with document_type
             const metadata = {
                 school_name: document.getElementById('schoolNameInput').value.trim(),
                 schoolCode: localStorage.getItem('schoolCode'),
-                document_type: documentType,  // ✅ NEW: Critical field
+                document_type: documentType,
                 standard: document.getElementById('standard').value,
                 subject: document.getElementById('subject').value,
                 language: document.getElementById('language').value,
@@ -1076,12 +970,11 @@
                 chapter: document.getElementById('chapter').value.trim(),
                 unit: document.getElementById('unit').value.trim(),
                 book_name: document.getElementById('bookName').value.trim(),
-                academic_year: document.getElementById('academicYear').value.trim(),
+                academic_year: document.getElementById('academicYear').value,
                 original_filename: selectedFile.name,
                 uploaded_by: userEmail
             };
 
-            // ✅ NEW: Add exam_type and exam_year if document_type is question_bank
             if (documentType === 'question_bank') {
                 metadata.exam_type = document.getElementById('examType').value.trim();
                 metadata.exam_year = document.getElementById('examYear').value.trim();
@@ -1089,7 +982,6 @@
 
             console.log('📤 Uploading with metadata:', metadata);
 
-            // Validate required fields
             if (!metadata.school_name || !metadata.document_type || !metadata.standard || !metadata.subject || !metadata.language) {
                 showStatus('Please fill all required fields (Document Type, School, Standard, Subject, Language)', 'error');
                 return;
@@ -1134,7 +1026,6 @@
 
                 showProgress(100);
                 
-                // ✅ UPDATED: Show document type in success message
                 const docTypeLabel = documentType === 'study_material' ? '📚 Study Material' :
                                    documentType === 'question_bank' ? '📝 Question Bank' :
                                    documentType === 'qna_pairs' ? '💡 Q&A Pairs' : documentType;
@@ -1150,15 +1041,6 @@
                 uploadBtn.disabled = true;
                 uploadBtn.textContent = 'Upload Document';
                 
-                // Reset dropdowns
-                document.getElementById('subject').innerHTML = '<option value="">Select standard first</option>';
-                document.getElementById('subject').disabled = true;
-                document.getElementById('language').innerHTML = '<option value="">Select subject first</option>';
-                document.getElementById('language').disabled = true;
-                document.getElementById('group').innerHTML = '<option value="">Select subject first</option>';
-                document.getElementById('group').disabled = true;
-                
-                // Hide conditional fields
                 document.getElementById('questionBankFields').classList.remove('show');
 
                 loadStats();
@@ -1192,7 +1074,6 @@
             }
         }
 
-        // Load statistics
         async function loadStats() {
             try {
                 console.log('📊 Loading teacher statistics...');
@@ -1228,7 +1109,6 @@
             }
         }
 
-        // Load activities
         async function loadActivities() {
             const container = document.getElementById('activitiesContainer');
             
@@ -1253,7 +1133,7 @@
                 let html = '<table><thead><tr>';
                 html += '<th>Date</th>';
                 html += '<th>Document</th>';
-                html += '<th>Type</th>';  // ✅ NEW: Document Type column
+                html += '<th>Type</th>';
                 html += '<th>Subject</th>';
                 html += '<th>Standard</th>';
                 html += '<th>Pages</th>';
@@ -1265,7 +1145,6 @@
                     const statusClass = doc.status === 'completed' ? 'success' : 
                                       doc.status === 'failed' ? 'error' : 'processing';
                     
-                    // ✅ NEW: Show document type with icon
                     const docTypeLabel = doc.document_type === 'study_material' ? '📚 Study' :
                                        doc.document_type === 'question_bank' ? '📝 Questions' :
                                        doc.document_type === 'qna_pairs' ? '💡 Q&A' : '-';
@@ -1316,6 +1195,29 @@
             window.location.href = 'index.html';
         });
 
+        // Add event listeners for standard and subject changes
+        document.getElementById('standard').addEventListener('change', function() {
+            const standard = this.value;
+            const subject = document.getElementById('subject').value;
+            
+            if (standard && subject) {
+                loadGroups(standard, subject);
+            } else if (!standard) {
+                document.getElementById('group').innerHTML = '<option value="">No Group (Optional)</option>';
+            }
+        });
+
+        document.getElementById('subject').addEventListener('change', function() {
+            const subject = this.value;
+            const standard = document.getElementById('standard').value;
+            
+            if (subject && standard) {
+                loadGroups(standard, subject);
+            } else {
+                document.getElementById('group').innerHTML = '<option value="">No Group (Optional)</option>';
+            }
+        });
+
         // Initialize
         window.addEventListener('DOMContentLoaded', async () => {
             if (!checkAuth()) return;
@@ -1324,37 +1226,6 @@
             await loadTeacherProfile();
             await loadStandards();
             await loadStats();
-            
-            // Add dropdown event listeners
-            document.getElementById('standard').addEventListener('change', function() {
-                const standard = this.value;
-                
-                if (standard) {
-                    loadSubjects(standard);
-                } else {
-                    document.getElementById('subject').innerHTML = '<option value="">Select standard first</option>';
-                    document.getElementById('subject').disabled = true;
-                    document.getElementById('language').innerHTML = '<option value="">Select subject first</option>';
-                    document.getElementById('language').disabled = true;
-                    document.getElementById('group').innerHTML = '<option value="">Select subject first</option>';
-                    document.getElementById('group').disabled = true;
-                }
-            });
-
-            document.getElementById('subject').addEventListener('change', function() {
-                const subject = this.value;
-                const standard = document.getElementById('standard').value;
-                
-                if (subject && standard) {
-                    loadLanguages(standard, subject);
-                    loadGroups(standard, subject);
-                } else {
-                    document.getElementById('language').innerHTML = '<option value="">Select subject first</option>';
-                    document.getElementById('language').disabled = true;
-                    document.getElementById('group').innerHTML = '<option value="">Select subject first</option>';
-                    document.getElementById('group').disabled = true;
-                }
-            });
         });
     </script>
 </body>
